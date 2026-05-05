@@ -32,6 +32,9 @@ import {
   FileText,
   Save,
   Palette,
+  Upload,
+  ImageIcon,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -198,6 +201,8 @@ export default function AdminPage() {
     name: '', slug: '', category: '', condition: '', price: '', description: '',
     imageUrl: '', status: 'active', isFeatured: false,
   });
+  const [imageUploading, setImageUploading] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string>('');
 
   // User form
   const [userForm, setUserForm] = useState({ name: '', email: '', role: 'user' });
@@ -338,7 +343,76 @@ export default function AdminPage() {
         imageUrl: '', status: 'active', isFeatured: false,
       });
     }
+    // Set preview when editing
+    if (product && product.imageUrl) {
+      setImagePreview(product.imageUrl);
+    } else {
+      setImagePreview('');
+    }
     setProductDialogOpen(true);
+  };
+
+  /* ─── Image Upload ─── */
+  const handleImageUpload = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file (JPEG, PNG, WebP, or GIF)');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Image too large. Maximum 10MB.');
+      return;
+    }
+
+    setImageUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (res.ok && data.url) {
+        setProductForm((prev) => ({ ...prev, imageUrl: data.url }));
+        setImagePreview(data.url);
+        toast.success('Image uploaded!');
+      } else {
+        toast.error(data.error || 'Upload failed');
+      }
+    } catch {
+      toast.error('Upload failed. Please try again.');
+    } finally {
+      setImageUploading(false);
+    }
+  };
+
+  const handleDropZoneClick = () => {
+    const input = document.getElementById('image-upload-input') as HTMLInputElement;
+    if (input) input.click();
+  };
+
+  const handleDropZoneDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    (e.currentTarget as HTMLElement).classList.add('border-teal-500', 'bg-teal-50/50');
+  };
+
+  const handleDropZoneDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    (e.currentTarget as HTMLElement).classList.remove('border-teal-500', 'bg-teal-50/50');
+  };
+
+  const handleDropZoneDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    (e.currentTarget as HTMLElement).classList.remove('border-teal-500', 'bg-teal-50/50');
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      handleImageUpload(files[0]);
+    }
   };
 
   const handleProductSubmit = async () => {
@@ -1442,9 +1516,74 @@ export default function AdminPage() {
                 </Select>
               </div>
             </div>
+            {/* Image Upload */}
             <div className="space-y-2">
-              <Label>Image URL</Label>
-              <Input value={productForm.imageUrl} onChange={(e) => setProductForm({ ...productForm, imageUrl: e.target.value })} placeholder="/images/product.jpg" />
+              <Label>Product Image</Label>
+              {imagePreview ? (
+                <div className="relative rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                  <img
+                    src={imagePreview}
+                    alt="Product preview"
+                    className="w-full h-48 object-contain bg-white"
+                  />
+                  <div className="absolute top-2 right-2 flex gap-1">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="h-7 bg-white/90 hover:bg-white shadow-sm"
+                      onClick={handleDropZoneClick}
+                    >
+                      <Pencil className="h-3 w-3 mr-1" /> Change
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="h-7 bg-white/90 hover:bg-red-100 text-red-600 shadow-sm"
+                      onClick={() => {
+                        setProductForm((prev) => ({ ...prev, imageUrl: '' }));
+                        setImagePreview('');
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  onClick={handleDropZoneClick}
+                  onDragOver={handleDropZoneDragOver}
+                  onDragLeave={handleDropZoneDragLeave}
+                  onDrop={handleDropZoneDrop}
+                  className="flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50/50 p-8 cursor-pointer transition-colors hover:border-teal-400 hover:bg-teal-50/30"
+                >
+                  {imageUploading ? (
+                    <Loader2 className="h-10 w-10 text-teal-500 animate-spin" />
+                  ) : (
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-100">
+                      <Upload className="h-6 w-6 text-teal-600" />
+                    </div>
+                  )}
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-gray-700">
+                      {imageUploading ? 'Uploading...' : 'Click to upload or drag & drop'}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">JPEG, PNG, WebP, GIF (max 10MB)</p>
+                  </div>
+                </div>
+              )}
+              <input
+                id="image-upload-input"
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleImageUpload(file);
+                  e.target.value = '';
+                }}
+              />
             </div>
             <div className="space-y-2">
               <Label>Description</Label>
