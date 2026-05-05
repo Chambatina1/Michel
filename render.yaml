@@ -6,11 +6,17 @@ services:
     repo: https://github.com/Chambatina1/Michel.git
     branch: main
     buildCommand: npm install && npx prisma generate && npm run build
-    startCommand: mkdir -p db && npx prisma db push --skip-generate 2>/dev/null; node .next/standalone/server.js
+    startCommand: npx prisma db push --skip-generate && node .next/standalone/server.js
     envVars:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        value: file:/app/db/custom.db
+        fromDatabase:
+          name: michel-db
+          property: connectionString
+      - key: DIRECT_DATABASE_URL
+        fromDatabase:
+          name: michel-db
+          property: internalConnectionString
     healthCheckPath: /
     region: florida
