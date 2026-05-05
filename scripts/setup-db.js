@@ -1,64 +1,25 @@
 // Setup database for Render deployment
+// This script is safe to run during build - it will gracefully skip if DB is unavailable
 const { execSync } = require('child_process');
-const { PrismaClient } = require('@prisma/client');
 
-async function main() {
-  console.log('=== Database Setup (PostgreSQL) ===');
-  console.log('Working directory:', process.cwd());
+console.log('=== Database Setup ===');
+console.log('This script runs during build but may skip if DB is not yet available.');
 
-  // Check DATABASE_URL
-  if (!process.env.DATABASE_URL) {
-    console.log('ERROR: DATABASE_URL not set, skipping database setup');
-    process.exit(0);
-  }
-
-  console.log('DATABASE_URL is configured');
-
-  // Push schema to create/update tables
-  console.log('Pushing Prisma schema to database...');
-  try {
-    execSync('npx prisma db push --skip-generate --accept-data-loss 2>&1', {
-      stdio: 'pipe',
-      timeout: 60000,
-    });
-    console.log('Schema pushed successfully');
-  } catch (err) {
-    console.log('Schema push output:', err.stdout?.toString());
-    console.log('Schema push errors:', err.stderr?.toString());
-  }
-
-  // Check if products already exist before seeding
-  try {
-    const prisma = new PrismaClient();
-    const productCount = await prisma.product.count();
-    console.log(`Current product count: ${productCount}`);
-
-    if (productCount === 0) {
-      console.log('No products found, running seed...');
-      try {
-        execSync('npx tsx prisma/seed.ts 2>&1', {
-          stdio: 'pipe',
-          timeout: 120000,
-          cwd: process.cwd(),
-        });
-        console.log('Seed completed successfully');
-      } catch (err) {
-        console.log('Seed output:', err.stdout?.toString());
-        console.log('Seed errors:', err.stderr?.toString());
-      }
-    } else {
-      console.log(`Database already has ${productCount} products, skipping seed`);
-    }
-
-    await prisma.$disconnect();
-  } catch (err) {
-    console.log('Database check failed:', err.message);
-  }
-
-  console.log('=== Database Setup Complete ===');
+if (!process.env.DATABASE_URL || process.env.DATABASE_URL.includes('file:')) {
+  console.log('DATABASE_URL not configured for PostgreSQL, skipping DB setup.');
+  process.exit(0);
 }
 
-main().catch((err) => {
-  console.error('Setup failed:', err);
-  process.exit(0);
-});
+console.log('DATABASE_URL found, attempting schema push...');
+try {
+  execSync('npx prisma db push --skip-generate --accept-data-loss 2>&1', {
+    stdio: 'pipe',
+    timeout: 30000,
+  });
+  console.log('Schema pushed successfully');
+} catch (err) {
+  console.log('Schema push skipped (DB may not be available during build):');
+  console.log(err.stdout?.toString() || '');
+}
+
+console.log('=== Setup Complete ===');
