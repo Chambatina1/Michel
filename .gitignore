@@ -52,3 +52,16 @@ prompt
 server.log
 # Skills directory
 /skills/
+
+# Database
+/db/*.db
+/db/*.db-journal
+
+# Z-scripts (internal)
+.zscripts/
+
+# Worklog
+worklog.md
+
+# Admin auth storage
+admin_auth
