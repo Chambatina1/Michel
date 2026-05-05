@@ -5,8 +5,8 @@ services:
     plan: starter
     repo: https://github.com/Chambatina1/Michel.git
     branch: main
-    buildCommand: npm install && npx prisma generate && node scripts/setup-db.js && npm run build
-    startCommand: node .next/standalone/server.js
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: mkdir -p db && npx prisma db push --skip-generate 2>/dev/null; node .next/standalone/server.js
     envVars:
       - key: NODE_ENV
         value: production

@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+
+// Hardcoded admin credentials (works even if database is not initialized)
+const ADMIN_CREDENTIALS = {
+  email: 'admin@psmedicaldevices.com',
+  password: 'admin123',
+  name: 'PS Admin',
+  role: 'admin',
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,54 +20,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = await db.user.findUnique({
-      where: { email },
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Invalid credentials' },
-        { status: 401 }
-      );
+    // Direct credential check (no database dependency)
+    if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
+      return NextResponse.json({
+        user: {
+          id: 'admin-001',
+          email: ADMIN_CREDENTIALS.email,
+          name: ADMIN_CREDENTIALS.name,
+          role: ADMIN_CREDENTIALS.role,
+        },
+        message: 'Authentication successful',
+      });
     }
 
-    if (!user.isActive) {
-      return NextResponse.json(
-        { error: 'Account is deactivated' },
-        { status: 403 }
-      );
-    }
-
-    // Simple password check (in production, use bcrypt/argon2)
-    // For the seeded admin: admin@psmedicaldevices.com / admin123
-    const validPasswords: Record<string, string> = {
-      'admin@psmedicaldevices.com': 'admin123',
-    };
-
-    if (validPasswords[user.email] !== password) {
-      return NextResponse.json(
-        { error: 'Invalid credentials' },
-        { status: 401 }
-      );
-    }
-
-    if (user.role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Access denied. Admin access required.' },
-        { status: 403 }
-      );
-    }
-
-    // Return user info (no JWT/session for this simple implementation)
-    return NextResponse.json({
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-      },
-      message: 'Authentication successful',
-    });
+    return NextResponse.json(
+      { error: 'Invalid credentials' },
+      { status: 401 }
+    );
   } catch (error) {
     console.error('Error in auth API:', error);
     return NextResponse.json(
