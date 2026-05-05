@@ -670,9 +670,9 @@ async function main() {
   const settings = [
     { key: 'company_name', value: 'PS Medical Devices', type: 'text' },
     { key: 'tagline', value: 'Trusted Medical Equipment Partner', type: 'text' },
-    { key: 'phone', value: '+1 (800) 555-0199', type: 'text' },
-    { key: 'email', value: 'info@psmedicaldevices.com', type: 'text' },
-    { key: 'address', value: '123 Medical Center Drive, Suite 400, Houston, TX 77001', type: 'text' },
+    { key: 'phone', value: '+1 (305) 244-9340', type: 'text' },
+    { key: 'email', value: 'michelgg0102780@gmail.com', type: 'text' },
+    { key: 'address', value: '2234 Winter Woods, Unidad 1000, Winter Park, FL 32792', type: 'text' },
     { key: 'hours', value: 'Monday - Friday: 8:00 AM - 6:00 PM CST', type: 'text' },
     { key: 'primary_color', value: '#0F2B5B', type: 'color' },
     { key: 'accent_color', value: '#0D9488', type: 'color' },
