@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, Plus, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -47,9 +48,14 @@ export function Navbar() {
       <div className="relative mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-transform group-hover:scale-105">
-            <Plus className="h-5 w-5" strokeWidth={3} />
-          </div>
+          <Image
+            src="/images/logo.jpeg"
+            alt="PS Medical Devices"
+            width={45}
+            height={45}
+            className="rounded-lg object-contain transition-transform group-hover:scale-105"
+            priority
+          />
           <div className="flex flex-col">
             <span className="text-lg font-bold leading-tight tracking-tight text-primary">
               PS Medical
@@ -110,9 +116,13 @@ export function Navbar() {
           <SheetContent side="right" className="w-80 sm:max-w-sm p-0">
             <SheetHeader className="px-4 pt-4 pb-2">
               <SheetTitle className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <Plus className="h-4 w-4" strokeWidth={3} />
-                </div>
+                <Image
+                  src="/images/logo.jpeg"
+                  alt="PS Medical Devices"
+                  width={32}
+                  height={32}
+                  className="rounded-lg object-contain"
+                />
                 PS Medical Devices
               </SheetTitle>
             </SheetHeader>

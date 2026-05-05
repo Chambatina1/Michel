@@ -1,6 +1,6 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
-  Plus,
   Phone,
   Mail,
   MapPin,
@@ -42,9 +42,13 @@ export function Footer() {
           {/* Column 1: Company Info */}
           <div className="space-y-4">
             <Link href="/" className="inline-flex items-center gap-2 group">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground transition-transform group-hover:scale-105">
-                <Plus className="h-5 w-5" strokeWidth={3} />
-              </div>
+              <Image
+                src="/images/logo.jpeg"
+                alt="PS Medical Devices"
+                width={45}
+                height={45}
+                className="rounded-lg object-contain transition-transform group-hover:scale-105 brightness-0 invert"
+              />
               <div className="flex flex-col">
                 <span className="text-lg font-bold leading-tight tracking-tight text-white">
                   PS Medical
