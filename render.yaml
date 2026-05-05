@@ -11,8 +11,12 @@ services:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        value: postgresql://micel_admin:yJmfj4wjjHF2YHehcvM907wWWb1A8SWM@dpg-d7t6gvl7vvec73ft84qg-a.oregon-postgres.render.com:5432/michel_db?sslmode=require
+        fromDatabase:
+          name: Michel-db
+          property: externalConnectionString
       - key: DIRECT_DATABASE_URL
-        value: postgresql://micel_admin:yJmfj4wjjHF2YHehcvM907wWWb1A8SWM@dpg-d7t6gvl7vvec73ft84qg-a/michel_db?sslmode=require
+        fromDatabase:
+          name: Michel-db
+          property: internalConnectionString
     healthCheckPath: /
     region: oregon
