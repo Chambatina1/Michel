@@ -6,17 +6,13 @@ services:
     repo: https://github.com/Chambatina1/Michel.git
     branch: main
     buildCommand: npm install && npx prisma generate && npm run build
-    startCommand: npx prisma db push --skip-generate --accept-data-loss 2>/dev/null; node scripts/setup-db.js 2>/dev/null; node .next/standalone/server.js
+    startCommand: node .next/standalone/server.js
     envVars:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        fromDatabase:
-          name: Michel-db
-          property: externalConnectionString
+        value: postgresql://micel_admin:yJmfj4wjjHF2YHehcvM907wWWb1A8SWM@dpg-d7t6gvl7vvec73ft84qg-a.oregon-postgres.render.com:5432/michel_db?sslmode=require
       - key: DIRECT_DATABASE_URL
-        fromDatabase:
-          name: Michel-db
-          property: internalConnectionString
+        value: postgresql://micel_admin:yJmfj4wjjHF2YHehcvM907wWWb1A8SWM@dpg-d7t6gvl7vvec73ft84qg-a/michel_db?sslmode=require
     healthCheckPath: /
     region: oregon
