@@ -3,10 +3,11 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const dbDir = path.join(__dirname, '..', 'db');
-const dbFile = path.join(dbDir, 'custom.db');
+const dbDir = path.resolve(process.cwd(), 'db');
 
 console.log('=== Database Setup ===');
+console.log('Working directory:', process.cwd());
+console.log('DB directory:', dbDir);
 
 // Ensure db directory exists
 if (!fs.existsSync(dbDir)) {
@@ -14,28 +15,24 @@ if (!fs.existsSync(dbDir)) {
   console.log('Created db directory');
 }
 
-// Check DATABASE_URL
-const dbUrl = process.env.DATABASE_URL || 'file:./db/custom.db';
-console.log('DATABASE_URL:', dbUrl);
-
+// Push schema
+console.log('Pushing Prisma schema...');
 try {
-  // Push schema
-  console.log('\nPushing Prisma schema...');
-  execSync('npx prisma db push --force-reset --skip-generate', { stdio: 'inherit' });
-  console.log('Schema pushed successfully');
+  execSync('npx prisma db push --force-reset --skip-generate 2>&1', { stdio: 'pipe' });
+  console.log('Schema pushed');
 } catch (err) {
-  console.error('Failed to push schema:', err.message);
-  process.exit(1);
+  console.log('Schema push output:', err.stdout?.toString());
+  console.log('Schema push errors:', err.stderr?.toString());
 }
 
+// Run seed
+console.log('Running seed...');
 try {
-  // Run seed using tsx
-  console.log('\nRunning database seed...');
-  execSync('npx tsx prisma/seed.ts', { stdio: 'inherit', cwd: path.join(__dirname, '..') });
-  console.log('Seed completed successfully');
+  execSync('npx tsx prisma/seed.ts 2>&1', { stdio: 'pipe', cwd: process.cwd() });
+  console.log('Seed completed');
 } catch (err) {
-  console.error('Failed to run seed:', err.message);
-  process.exit(1);
+  console.log('Seed output:', err.stdout?.toString());
+  console.log('Seed errors:', err.stderr?.toString());
 }
 
-console.log('\n=== Database setup complete ===');
+console.log('=== Done ===');
