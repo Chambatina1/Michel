@@ -64,4 +64,4 @@ server.log
 worklog.md
 
 # Admin auth storage
-admin_auth
+admin_auth.env
