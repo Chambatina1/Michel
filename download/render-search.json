@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://render.com/docs/deploys",
+    "name": "Deploying on Render",
+    "snippet": "Render can automatically deploy your application each time you merge a change to your codebase: High-level auto-deploy steps.",
+    "host_name": "render.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://render.com/docs/your-first-deploy",
+    "name": "Your First Render Deploy",
+    "snippet": "If your app's programming language isn't listed in this dropdown, you can still deploy using the Docker runtime if you build your app from a Dockerfile .",
+    "host_name": "render.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://render.com/docs/api",
+    "name": "The Render API – Render Docs",
+    "snippet": "The Render API enables you to manage your Render services and resources with HTTP requests. Integrate the power of the Render Dashboard into your own ...",
+    "host_name": "render.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/@0x7c4/deploying-apis-on-render-a-step-by-step-guide-4ebe6a3fd377",
+    "name": "Deploying APIs on Render: A Step-by-Step Guide | by 0x7c4",
+    "snippet": "Deploying an API on Render is a straightforward process . Thanks to the user-friendly interface, you can deploy your apps with just a few clicks.",
+    "host_name": "medium.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://render.com/docs/deploy-to-render",
+    "name": "Deploy to Render Button",
+    "snippet": "Once you add the Deploy to Render button to a README in your repo, your users can simply click the button, review the services to be deployed on their Render ...",
+    "host_name": "render.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

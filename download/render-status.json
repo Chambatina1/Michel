@@ -1,0 +1,29 @@
+[
+  {
+    "url": "https://status.render.com",
+    "name": "Render Status",
+    "snippet": "Welcome to Render's home for real-time and historical data on system performance.",
+    "host_name": "status.render.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://render.com/articles/how-render-handles-deploy-failures",
+    "name": "How Render handles deploy failures",
+    "snippet": "Apr 1, 2026 — Render is designed so that if something goes wrong during a build or startup, your existing live service keeps running as if nothing happened. Read more",
+    "host_name": "render.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://pingoru.io/providers/render/incidents/75661",
+    "name": "Image pull failures in Oregon — April 2026 - Render - Pingoru",
+    "snippet": "Apr 13, 2026 — Render incident on April 13, 2026 : This incident has been resolved. Started 10:03 PM UTC, resolved 10:26 PM UTC (23m). Affected: Builds and ...",
+    "host_name": "pingoru.io",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  }
+]
