@@ -102,3 +102,14 @@ model ChatMessage {
   content   String
   createdAt DateTime @default(now())
 }
+
+model AiKnowledge {
+  id        String   @id @default(cuid())
+  category  String   // product_info, pricing, services, faq, policies, general
+  question  String   // the question or topic
+  answer    String   // the detailed answer/information
+  keywords  String   // comma-separated keywords for matching
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

@@ -35,6 +35,9 @@ import {
   Upload,
   ImageIcon,
   Loader2,
+  Brain,
+  MessageSquare,
+  Tag,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -148,6 +151,17 @@ interface User {
   _count?: { reviews: number };
 }
 
+interface AiKnowledge {
+  id: string;
+  category: string;
+  question: string;
+  answer: string;
+  keywords: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /* ─── Navigation Items ─── */
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -156,6 +170,7 @@ const navItems = [
   { id: 'sell-requests', label: 'Sell Requests', icon: ShoppingBag },
   { id: 'reviews', label: 'Reviews', icon: Star },
   { id: 'users', label: 'Users', icon: Users },
+  { id: 'ai-training', label: 'AI Training', icon: Brain },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
@@ -210,6 +225,13 @@ export default function AdminPage() {
   // Filters
   const [leadStatusFilter, setLeadStatusFilter] = useState('all');
   const [sellStatusFilter, setSellStatusFilter] = useState('all');
+
+  // AI Knowledge
+  const [aiKnowledge, setAiKnowledge] = useState<AiKnowledge[]>([]);
+  const [knowledgeDialogOpen, setKnowledgeDialogOpen] = useState(false);
+  const [editingKnowledge, setEditingKnowledge] = useState<AiKnowledge | null>(null);
+  const [knowledgeForm, setKnowledgeForm] = useState({ category: 'general', question: '', answer: '', keywords: '' });
+  const [knowledgeCategoryFilter, setKnowledgeCategoryFilter] = useState('all');
 
   /* ─── Auth ─── */
   useEffect(() => {
@@ -314,12 +336,90 @@ export default function AdminPage() {
     }
   }, []);
 
+  const fetchAiKnowledge = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/ai-knowledge');
+      const data = await res.json();
+      if (res.ok) setAiKnowledge(data.knowledge || []);
+    } catch {
+      toast.error('Failed to load AI knowledge');
+    }
+  }, []);
+
   useEffect(() => {
     if (!isAuthenticated) return;
     fetchDashboardData();
     fetchUsers();
     fetchSettings();
-  }, [isAuthenticated, fetchDashboardData, fetchUsers, fetchSettings]);
+    if (activeTab === 'ai-training') fetchAiKnowledge();
+  }, [isAuthenticated, fetchDashboardData, fetchUsers, fetchSettings, activeTab, fetchAiKnowledge]);
+
+  /* ─── AI Knowledge actions ─── */
+  const openKnowledgeDialog = (entry?: AiKnowledge) => {
+    if (entry) {
+      setEditingKnowledge(entry);
+      setKnowledgeForm({ category: entry.category, question: entry.question, answer: entry.answer, keywords: entry.keywords });
+    } else {
+      setEditingKnowledge(null);
+      setKnowledgeForm({ category: 'general', question: '', answer: '', keywords: '' });
+    }
+    setKnowledgeDialogOpen(true);
+  };
+
+  const handleKnowledgeSubmit = async () => {
+    try {
+      let res;
+      if (editingKnowledge) {
+        res = await fetch(`/api/admin/ai-knowledge/${editingKnowledge.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(knowledgeForm),
+        });
+      } else {
+        res = await fetch('/api/admin/ai-knowledge', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(knowledgeForm),
+        });
+      }
+      if (res.ok) {
+        toast.success(editingKnowledge ? 'Knowledge updated' : 'Knowledge added');
+        setKnowledgeDialogOpen(false);
+        fetchAiKnowledge();
+      } else {
+        const d = await res.json();
+        toast.error(d.error || 'Failed to save');
+      }
+    } catch {
+      toast.error('Failed to save knowledge');
+    }
+  };
+
+  const deleteKnowledge = async (id: string) => {
+    try {
+      const res = await fetch(`/api/admin/ai-knowledge/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast.success('Knowledge deleted');
+        fetchAiKnowledge();
+      } else toast.error('Failed to delete');
+    } catch {
+      toast.error('Delete failed');
+    }
+  };
+
+  const toggleKnowledgeActive = async (entry: AiKnowledge) => {
+    try {
+      const res = await fetch(`/api/admin/ai-knowledge/${entry.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: !entry.isActive }),
+      });
+      if (res.ok) { toast.success('Status updated'); fetchAiKnowledge(); }
+      else toast.error('Failed to update');
+    } catch {
+      toast.error('Update failed');
+    }
+  };
 
   /* ─── Product CRUD ─── */
   const openProductDialog = (product?: Product) => {
@@ -1771,6 +1871,187 @@ export default function AdminPage() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── AI TRAINING TAB ─── */}
+      {activeTab === 'ai-training' && (
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">AI Training</h3>
+              <p className="text-sm text-gray-500">Train the chatbot with custom knowledge. Add Q&A pairs that the AI will use to answer customer questions.</p>
+            </div>
+            <Button onClick={() => openKnowledgeDialog()} className="gap-2 bg-purple-600 hover:bg-purple-700">
+              <Plus className="h-4 w-4" /> Add Knowledge
+            </Button>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Card className="border-0 shadow-sm">
+              <CardContent className="p-4 flex items-center gap-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-100 text-purple-600">
+                  <Brain className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-gray-900">{aiKnowledge.length}</p>
+                  <p className="text-xs text-gray-500">Total entries</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-0 shadow-sm">
+              <CardContent className="p-4 flex items-center gap-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
+                  <Check className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-gray-900">{aiKnowledge.filter(k => k.isActive).length}</p>
+                  <p className="text-xs text-gray-500">Active entries</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-0 shadow-sm">
+              <CardContent className="p-4 flex items-center gap-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+                  <Tag className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-gray-900">{new Set(aiKnowledge.map(k => k.category)).size}</p>
+                  <p className="text-xs text-gray-500">Categories</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Category Filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500">Filter:</span>
+            {['all', 'product_info', 'pricing', 'services', 'faq', 'policies', 'general'].map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setKnowledgeCategoryFilter(cat)}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  knowledgeCategoryFilter === cat
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {cat === 'all' ? 'All' : cat.replace('_', ' ')}
+              </button>
+            ))}
+          </div>
+
+          {/* Knowledge List */}
+          <div className="space-y-3">
+            {(knowledgeCategoryFilter === 'all' ? aiKnowledge : aiKnowledge.filter(k => k.category === knowledgeCategoryFilter)).map((entry) => (
+              <Card key={entry.id} className={`border-0 shadow-sm transition-opacity ${!entry.isActive ? 'opacity-50' : ''}`}>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant="outline" className="text-xs capitalize bg-purple-50 text-purple-700 border-purple-200">
+                          {entry.category.replace('_', ' ')}
+                        </Badge>
+                        <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${entry.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                          {entry.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                      <p className="font-medium text-gray-900 text-sm mb-1">{entry.question}</p>
+                      <p className="text-sm text-gray-600 line-clamp-2">{entry.answer}</p>
+                      {entry.keywords && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {entry.keywords.split(',').map((kw) => (
+                            <span key={kw.trim()} className="px-2 py-0.5 rounded bg-gray-100 text-[10px] text-gray-500 font-medium">{kw.trim()}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleKnowledgeActive(entry)} title={entry.isActive ? 'Deactivate' : 'Activate'}>
+                        {entry.isActive ? <Eye className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5 text-gray-400" />}
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openKnowledgeDialog(entry)} title="Edit">
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600" onClick={() => deleteKnowledge(entry.id)} title="Delete">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            {aiKnowledge.length === 0 && (
+              <Card className="border-0 shadow-sm">
+                <CardContent className="py-12 text-center">
+                  <Brain className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500 font-medium">No knowledge entries yet</p>
+                  <p className="text-sm text-gray-400 mt-1">Add Q&A pairs to train the AI chatbot</p>
+                  <Button onClick={() => openKnowledgeDialog()} className="mt-4 gap-2 bg-purple-600 hover:bg-purple-700">
+                    <Plus className="h-4 w-4" /> Add First Entry
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Knowledge Dialog */}
+      <Dialog open={knowledgeDialogOpen} onOpenChange={setKnowledgeDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editingKnowledge ? 'Edit Knowledge' : 'Add Knowledge'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Category</Label>
+              <Select value={knowledgeForm.category} onValueChange={(v) => setKnowledgeForm({ ...knowledgeForm, category: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="product_info">Product Info</SelectItem>
+                  <SelectItem value="pricing">Pricing</SelectItem>
+                  <SelectItem value="services">Services</SelectItem>
+                  <SelectItem value="faq">FAQ</SelectItem>
+                  <SelectItem value="policies">Policies</SelectItem>
+                  <SelectItem value="general">General</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Question / Topic</Label>
+              <Input
+                placeholder="e.g.: What CT scanners do you have available?"
+                value={knowledgeForm.question}
+                onChange={(e) => setKnowledgeForm({ ...knowledgeForm, question: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Answer / Information</Label>
+              <Textarea
+                placeholder="The detailed answer the AI should use..."
+                rows={5}
+                value={knowledgeForm.answer}
+                onChange={(e) => setKnowledgeForm({ ...knowledgeForm, answer: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Keywords (comma separated)</Label>
+              <Input
+                placeholder="e.g.: ct, scanner, tomography, tac"
+                value={knowledgeForm.keywords}
+                onChange={(e) => setKnowledgeForm({ ...knowledgeForm, keywords: e.target.value })}
+              />
+              <p className="text-xs text-gray-400">Keywords help the AI match questions to the right answer.</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setKnowledgeDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleKnowledgeSubmit} className="bg-purple-600 hover:bg-purple-700" disabled={!knowledgeForm.question || !knowledgeForm.answer}>
+              {editingKnowledge ? 'Update' : 'Add Entry'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
