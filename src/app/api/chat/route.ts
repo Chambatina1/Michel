@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-const SYSTEM_PROMPT = `You are PS Medical Device's AI assistant. You help customers with questions about medical imaging equipment (CT, MRI, X-Ray, Ultrasound), ophthalmology equipment, repair services, selling used equipment, and general inquiries. Be professional, helpful, and knowledgeable. If asked about pricing, suggest requesting a quote through our website. Always mention that we offer expert advisory and after-sales support with every purchase. Respond in the same language the user writes in (if they write in Spanish, respond in Spanish).
+const SYSTEM_PROMPT = `You are PS Medical Device's AI assistant. You help customers with questions about medical imaging equipment (CT, MRI, X-Ray, Ultrasound), ophthalmology equipment, repair services, selling used equipment, and general inquiries. Be professional, helpful, and knowledgeable. If asked about pricing, suggest requesting a quote through our website. Always mention that we offer expert advisory and after-sales support with every purchase. Respond in the same language the user writes in (if they write in Spanish, respond in Spanish). Keep responses concise (2-4 sentences max unless asked for details).
 
 Key facts about PS Medical Devices:
 - Located at 2234 Winter Woods, Unidad 1000, Winter Park, FL 32792
@@ -39,19 +39,16 @@ export async function POST(request: NextRequest) {
       });
 
       if (knowledgeEntries.length > 0) {
-        knowledgeContext = '\n\nAdditional company knowledge (use this information to answer questions accurately):\n';
+        knowledgeContext = '\n\nAdditional company knowledge (use this to answer accurately):\n';
         for (const entry of knowledgeEntries) {
-          knowledgeContext += `\nQ: ${entry.question}\nA: ${entry.answer}\n`;
+          knowledgeContext += `Q: ${entry.question}\nA: ${entry.answer}\n`;
         }
       }
     } catch (dbError) {
       console.error('Could not load knowledge base:', dbError);
     }
 
-    // Build system prompt with knowledge context
     const fullSystemPrompt = SYSTEM_PROMPT + (knowledgeContext || '');
-
-    // Build messages array for the AI
     const messages = [
       { role: 'system' as const, content: fullSystemPrompt },
       { role: 'user' as const, content: message },
@@ -59,65 +56,45 @@ export async function POST(request: NextRequest) {
 
     let assistantMessage: string;
 
-    // Try Z-AI SDK first (built-in AI backend, no API key needed)
-    try {
-      const ZAI = (await import('z-ai-web-dev-sdk')).default;
-      const zai = await ZAI.create();
+    // Try OpenAI API first (if key is configured)
+    if (process.env.OPENAI_API_KEY) {
+      try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages,
+            temperature: 0.7,
+            max_tokens: 500,
+          }),
+        });
 
-      const completion = await zai.chat.completions.create({
-        messages: messages as any,
-        temperature: 0.7,
-        max_tokens: 800,
-      });
-
-      assistantMessage =
-        completion?.choices?.[0]?.message?.content ||
-        'Lo siento, no pude generar una respuesta. Por favor intente de nuevo o contáctenos directamente.';
-
-      console.log('Z-AI SDK response successful');
-    } catch (zaiError) {
-      console.error('Z-AI SDK error, trying OpenAI fallback:', zaiError);
-
-      // Try OpenAI API as secondary option
-      if (process.env.OPENAI_API_KEY) {
-        try {
-          const response = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-            },
-            body: JSON.stringify({
-              model: 'gpt-4o-mini',
-              messages,
-              temperature: 0.7,
-              max_tokens: 800,
-            }),
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            assistantMessage =
-              data?.choices?.[0]?.message?.content ||
-              'Lo siento, no pude generar una respuesta. Por favor intente de nuevo o contáctenos directamente.';
-            console.log('OpenAI API response successful');
-          } else {
-            const errorText = await response.text();
-            console.error('OpenAI API error response:', response.status, errorText);
-            throw new Error(`OpenAI API error: ${response.status}`);
+        if (response.ok) {
+          const data = await response.json();
+          assistantMessage = data?.choices?.[0]?.message?.content || '';
+          if (assistantMessage) {
+            console.log('OpenAI response successful');
           }
-        } catch (aiError) {
-          console.error('OpenAI API error, using knowledge base fallback:', aiError);
-          assistantMessage = await getSmartFallback(message);
+        } else {
+          console.error('OpenAI API error:', response.status);
+          assistantMessage = '';
         }
-      } else {
-        // Ultimate fallback to keyword-based response
-        console.warn('No AI backend available, using knowledge base fallback');
-        assistantMessage = await getSmartFallback(message);
+      } catch (aiError) {
+        console.error('OpenAI error:', aiError);
+        assistantMessage = '';
       }
     }
 
-    // Save messages to database for history
+    // If OpenAI didn't work, use the smart keyword system
+    if (!assistantMessage) {
+      assistantMessage = await getSmartFallback(message);
+    }
+
+    // Save messages to database
     try {
       await prisma.chatMessage.createMany({
         data: [
@@ -142,29 +119,25 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Smart fallback that uses the knowledge base
+// Smart fallback using knowledge base + keyword matching
 async function getSmartFallback(message: string): Promise<string> {
   const lower = message.toLowerCase();
 
   try {
-    // Search knowledge base for relevant entries
     const allKnowledge = await prisma.aiKnowledge.findMany({
       where: { isActive: true },
     });
 
     if (allKnowledge.length > 0) {
-      // Score each knowledge entry by keyword relevance
       const scored = allKnowledge.map((entry) => {
         const keywords = entry.keywords.toLowerCase().split(',').map(k => k.trim());
         const questionWords = entry.question.toLowerCase().split(/\s+/);
         let score = 0;
 
-        // Check keyword matches
         for (const keyword of keywords) {
           if (keyword && lower.includes(keyword)) score += 3;
         }
 
-        // Check question word matches
         for (const word of questionWords) {
           if (word.length > 3 && lower.includes(word)) score += 1;
         }
@@ -172,95 +145,124 @@ async function getSmartFallback(message: string): Promise<string> {
         return { entry, score };
       });
 
-      // Sort by score descending
       scored.sort((a, b) => b.score - a.score);
 
-      // If we have a good match (score >= 2), use it
       if (scored[0].score >= 2) {
         return scored[0].entry.answer;
-      }
-
-      // If there's knowledge but no specific match, mention what we can help with
-      if (allKnowledge.length > 0) {
-        const categories = [...new Set(allKnowledge.map(k => k.category))];
-        return getKeywordBasedResponse(lower, categories);
       }
     }
   } catch (error) {
     console.error('Knowledge base fallback error:', error);
   }
 
-  // Ultimate fallback with keyword matching
-  return getKeywordBasedResponse(lower, []);
+  return getKeywordBasedResponse(lower);
 }
 
-function getKeywordBasedResponse(lower: string, knowledgeCategories: string[]): string {
-  // Detect language
+function getKeywordBasedResponse(lower: string): string {
   const isSpanish = /[áéíóúñ¿¡]/.test(lower) ||
     lower.includes('hola') || lower.includes('gracias') ||
     lower.includes('necesito') || lower.includes('equipo') ||
     lower.includes('precio') || lower.includes('información') ||
     lower.includes('vender') || lower.includes('comprar') ||
-    lower.includes('servicio') || lower.includes('contacto');
+    lower.includes('servicio') || lower.includes('contacto') ||
+    lower.includes('buenos días') || lower.includes('buenas tardes') ||
+    lower.includes('buenas noches') || lower.includes('cómo estás');
 
-  if (lower.includes('price') || lower.includes('cost') || lower.includes('quote') || lower.includes('precio') || lower.includes('cuanto') || lower.includes('cuánto') || lower.includes('cotización')) {
+  // Greetings
+  if (/^(hi|hello|hey|hola|good morning|good afternoon|good evening|buenos días|buenas tardes|buenas noches|qué tal|que tal)/.test(lower)) {
     return isSpanish
-      ? 'Para información de precios y cotizaciones personalizadas, le recomendamos contactar a nuestro equipo directamente:\n\n📞 Teléfono: +1 (305) 244-9340\n📧 Correo: michelgg0102780@gmail.com\n\nTambién puede llenar nuestro formulario de solicitud de cotización en la página de Contacto. Ofrecemos precios competitivos tanto en equipos nuevos como reacondicionados.'
-      : 'For pricing information and personalized quotes, I recommend contacting our team directly:\n\n📞 Phone: +1 (305) 244-9340\n📧 Email: michelgg0102780@gmail.com\n\nYou can also fill out our quote request form on the Contact page. We offer competitive pricing on both new and refurbished equipment!';
+      ? '¡Hola! Bienvenido a PS Medical Devices. Estamos aquí para ayudarle con equipos de imagenología médica. ¿En qué puedo asistirle? Puede preguntar sobre equipos CT, MRI, Rayos X, Ultrasonido, Oftalmología, cotizaciones, servicios de reparación, o la venta de su equipo usado.'
+      : 'Hello! Welcome to PS Medical Devices. We are here to help you with medical imaging equipment. How can I assist you? Feel free to ask about CT, MRI, X-Ray, Ultrasound, Ophthalmology equipment, quotes, repair services, or selling your used equipment.';
   }
 
+  // Pricing
+  if (lower.includes('price') || lower.includes('cost') || lower.includes('quote') || lower.includes('precio') || lower.includes('cuanto') || lower.includes('cuánto') || lower.includes('cotización') || lower.includes('valor')) {
+    return isSpanish
+      ? 'Para cotizaciones personalizadas, contáctenos directamente. Ofrecemos precios competitivos en equipos nuevos y reacondicionados con opciones de financiamiento.\n\n📞 +1 (305) 244-9340\n📧 michelgg0102780@gmail.com\n\nTambién puede visitar nuestra página de Contacto para enviar su solicitud.'
+      : 'For personalized quotes, contact us directly. We offer competitive pricing on new and refurbished equipment with financing options.\n\n📞 +1 (305) 244-9340\n📧 michelgg0102780@gmail.com\n\nYou can also visit our Contact page to submit a quote request.';
+  }
+
+  // Sell equipment
   if (lower.includes('sell') || lower.includes('vender') || lower.includes('compr') || lower.includes('buyback') || lower.includes('compra') || lower.includes('venta')) {
     return isSpanish
-      ? '¡Compramos equipos médicos usados! Ofrecemos precios justos y nos encargamos de toda la logística para el retiro del equipo. Para comenzar:\n\n1. Visite nuestra página "Vender su Equipo"\n2. Llene el formulario con los detalles de su equipo\n3. Nuestro equipo evaluará y proporcionará una oferta en 48 horas\n\n¡Llámenos al +1 (305) 244-9340 para asistencia inmediata!'
-      : 'We buy used medical imaging equipment! We offer fair prices and handle all logistics for equipment removal. To get started:\n\n1. Visit our "Sell Your Equipment" page\n2. Fill out the form with your equipment details\n3. Our team will evaluate and provide an offer within 48 hours\n\nCall us at +1 (305) 244-9340 for immediate assistance!';
+      ? '¡Compramos equipos médicos usados! Ofrecemos precios justos y manejamos toda la logística de retiro.\n\n1. Visite "Vender su Equipo" en nuestro sitio\n2. Ingrese los detalles de su equipo\n3. Reciba una oferta en 48 horas\n\n📞 Llame al +1 (305) 244-9340 para atención inmediata.'
+      : 'We buy used medical imaging equipment! We offer fair prices and handle all removal logistics.\n\n1. Visit "Sell Your Equipment" on our website\n2. Enter your equipment details\n3. Receive an offer within 48 hours\n\n📞 Call +1 (305) 244-9340 for immediate assistance.';
   }
 
-  if (lower.includes('repair') || lower.includes('service') || lower.includes('mantenimiento') || lower.includes('soporte') || lower.includes('reparación')) {
+  // Repair/Service
+  if (lower.includes('repair') || lower.includes('service') || lower.includes('mantenimiento') || lower.includes('soporte') || lower.includes('reparación') || lower.includes('technical')) {
     return isSpanish
-      ? 'PS Medical Devices ofrece servicios integrales de reparación y mantenimiento para todo tipo de equipos de imagenología médica. Nuestros técnicos certificados proporcionan:\n\n• Programas de mantenimiento preventivo\n• Servicios de reparación de emergencia\n• Calibración y certificación de equipos\n• Actualizaciones de software\n\n¡Contáctenos al +1 (305) 244-9340 para solicitudes de servicio!'
-      : 'PS Medical Devices offers comprehensive repair and maintenance services for all types of medical imaging equipment. Our certified technicians provide:\n\n• Preventive maintenance programs\n• Emergency repair services\n• Equipment calibration and certification\n• Software upgrades and updates\n\nContact us at +1 (305) 244-9340 for service requests!';
+      ? 'Ofrecemos servicios completos de reparación y mantenimiento para equipos de imagenología médica:\n\n• Mantenimiento preventivo\n• Reparación de emergencia\n• Calibración y certificación\n• Actualizaciones de software\n\n📞 +1 (305) 244-9340 para solicitudes de servicio.'
+      : 'We offer comprehensive repair and maintenance services for medical imaging equipment:\n\n• Preventive maintenance programs\n• Emergency repair services\n• Equipment calibration and certification\n• Software upgrades\n\n📞 Call +1 (305) 244-9340 for service requests.';
   }
 
+  // CT
   if (lower.includes('ct') || lower.includes('scanner') || lower.includes('tomografía') || lower.includes('tac')) {
     return isSpanish
-      ? 'Contamos con una amplia selección de Escáneres CT incluyendo:\n\n• GE Revolution CT Scanner (256 cortes)\n• Toshiba Aquilion ONE CT (320 filas)\n• Siemens SOMATOM series\n\nTodas las unidades reacondicionadas incluyen garantía, soporte de instalación y capacitación. ¡Contáctenos para disponibilidad y precios actuales!'
-      : 'We carry a wide selection of CT Scanners including:\n\n• GE Revolution CT Scanner (256-slice)\n• Toshiba Aquilion ONE CT (320-row)\n• Siemens SOMATOM series\n\nAll refurbished units come with warranty, installation support, and training. Contact us for current availability and pricing!';
+      ? 'Contamos con escáneres CT de las mejores marcas: GE Revolution (256 cortes), Toshiba Aquilion ONE (320 filas), Siemens SOMATOM. Todas las unidades reacondicionadas incluyen garantía, instalación y capacitación. Contáctenos para disponibilidad.'
+      : 'We carry CT Scanners from top brands: GE Revolution (256-slice), Toshiba Aquilion ONE (320-row), Siemens SOMATOM. All refurbished units include warranty, installation, and training. Contact us for current availability.';
   }
 
+  // MRI
   if (lower.includes('mri') || lower.includes('resonancia') || lower.includes('rmn')) {
     return isSpanish
-      ? 'Nuestro inventario de MRI incluye las mejores marcas:\n\n• Siemens Magnetom Vida 3T\n• Hitachi Echelon Oval 1.5T\n• GE Signa series\n\nOfrecemos sistemas nuevos y reacondicionados con paquetes completos de instalación, capacitación y garantía.'
-      : 'Our MRI inventory includes top brands like:\n\n• Siemens Magnetom Vida 3T\n• Hitachi Echelon Oval 1.5T\n• GE Signa series\n\nWe offer both new and refurbished systems with full installation, training, and warranty packages.';
+      ? 'Nuestro inventario MRI incluye: Siemens Magnetom Vida 3T, Hitachi Echelon Oval 1.5T, GE Signa series. Sistemas nuevos y reacondicionados con paquetes completos de instalación y garantía.'
+      : 'Our MRI inventory includes: Siemens Magnetom Vida 3T, Hitachi Echelon Oval 1.5T, GE Signa series. Both new and refurbished systems with full installation and warranty packages.';
   }
 
+  // Ultrasound
   if (lower.includes('ultrasound') || lower.includes('ecogra') || lower.includes('ultrasonido')) {
     return isSpanish
-      ? 'Ofrecemos sistemas de ultrasonido premium de los principales fabricantes:\n\n• Philips IU Elite\n• Canon Aplio i800\n• GE LOGIQ E10\n\nIdeales para radiología, cardiología, obstetricia/ginecología y aplicaciones punto de atención.'
-      : 'We offer premium ultrasound systems from leading manufacturers:\n\n• Philips IU Elite\n• Canon Aplio i800\n• GE LOGIQ E10\n\nPerfect for radiology, cardiology, OB/GYN, and point-of-care applications.';
+      ? 'Sistemas de ultrasonido disponibles: Philips IU Elite, Canon Aplio i800, GE LOGIQ E10. Ideales para radiología, cardiología, obstetricia y punto de atención.'
+      : 'Available ultrasound systems: Philips IU Elite, Canon Aplio i800, GE LOGIQ E10. Ideal for radiology, cardiology, OB/GYN, and point-of-care.';
   }
 
+  // X-Ray
   if (lower.includes('x-ray') || lower.includes('rayos x') || lower.includes('radiogra')) {
     return isSpanish
-      ? 'Nuestra selección de equipos de rayos X incluye:\n\n• Carestream DRX-Evolution (radiografía digital)\n• GE Optima XR646\n• Shimadzu Sonialvision (sistema R/F)\n\nTodos los sistemas incluyen instalación, capacitación y garantía.'
-      : 'Our X-Ray equipment selection includes:\n\n• Carestream DRX-Evolution (digital radiography)\n• GE Optima XR646\n• Shimadzu Sonialvision (R/F system)\n\nAll systems include installation, training, and warranty.';
+      ? 'Equipos de rayos X: Carestream DRX-Evolution (digital), GE Optima XR646, Shimadzu Sonialvision (R/F). Todos con instalación, capacitación y garantía incluidas.'
+      : 'X-Ray equipment: Carestream DRX-Evolution (digital), GE Optima XR646, Shimadzu Sonialvision (R/F). All include installation, training, and warranty.';
   }
 
-  if (lower.includes('ophthalmol') || lower.includes('oct') || lower.includes('eye') || lower.includes('oftalm') || lower.includes('ojo') || lower.includes('visión')) {
+  // Ophthalmology
+  if (lower.includes('ophthalmol') || lower.includes('oct') || lower.includes('eye') || lower.includes('oftalm') || lower.includes('ojo') || lower.includes('visión') || lower.includes('vision')) {
     return isSpanish
-      ? 'Especializamos en equipos de diagnóstico oftalmológico:\n\n• Zeiss Cirrus HD-OCT 6000\n• Topcon Maestro 2 OCT\n• Heidelberg Spectralis OCT\n\nEstos sistemas son ideales para manejo de glaucoma, evaluación de enfermedades retinianas y cuidado ocular integral.'
-      : 'We specialize in ophthalmology diagnostic equipment:\n\n• Zeiss Cirrus HD-OCT 6000\n• Topcon Maestro 2 OCT\n• Heidelberg Spectralis OCT\n\nThese systems are ideal for glaucoma management, retinal disease assessment, and comprehensive eye care.';
+      ? 'Equipos oftalmológicos: Zeiss Cirrus HD-OCT 6000, Topcon Maestro 2 OCT, Heidelberg Spectralis OCT. Para manejo de glaucoma, enfermedades retinianas y cuidado ocular integral.'
+      : 'Ophthalmology equipment: Zeiss Cirrus HD-OCT 6000, Topcon Maestro 2 OCT, Heidelberg Spectralis OCT. For glaucoma management, retinal disease assessment, and comprehensive eye care.';
   }
 
-  if (lower.includes('contact') || lower.includes('phone') || lower.includes('email') || lower.includes('llamar') || lower.includes('contacto') || lower.includes('teléfono')) {
+  // Contact
+  if (lower.includes('contact') || lower.includes('phone') || lower.includes('email') || lower.includes('llamar') || lower.includes('contacto') || lower.includes('teléfono') || lower.includes('ubicación') || lower.includes('location') || lower.includes('dirección')) {
     return isSpanish
-      ? 'Puede contactar a PS Medical Devices a través de:\n\n📞 Teléfono: +1 (305) 244-9340\n📧 Correo: michelgg0102780@gmail.com\n📍 Dirección: 2234 Winter Woods, Unidad 1000, Winter Park, FL 32792\n🕐 Horario: Lunes a Viernes, 8:00 AM - 6:00 PM CST\n\n¡O visite nuestra página de Contacto para enviarnos un mensaje!'
-      : 'You can reach PS Medical Devices through:\n\n📞 Phone: +1 (305) 244-9340\n📧 Email: michelgg0102780@gmail.com\n📍 Address: 2234 Winter Woods, Unidad 1000, Winter Park, FL 32792\n🕐 Hours: Monday - Friday, 8:00 AM - 6:00 PM CST\n\nOr visit our Contact page to send us a message!';
+      ? 'Puede contactarnos:\n\n📞 +1 (305) 244-9340\n📧 michelgg0102780@gmail.com\n📍 2234 Winter Woods, Unidad 1000, Winter Park, FL 32792\n🕐 Lunes a Viernes, 8:00 AM - 6:00 PM CST\n\nO visite nuestra página de Contacto.'
+      : 'You can reach us:\n\n📞 +1 (305) 244-9340\n📧 michelgg0102780@gmail.com\n📍 2234 Winter Woods, Suite 1000, Winter Park, FL 32792\n🕐 Monday - Friday, 8:00 AM - 6:00 PM CST\n\nOr visit our Contact page.';
   }
 
-  // Default response - detect language
+  // Thanks
+  if (lower.includes('thank') || lower.includes('gracias') || lower.includes('thanks')) {
+    return isSpanish
+      ? '¡De nada! Fue un placer ayudarle. Si tiene más preguntas, no dude en escribirnos. Estamos aquí para asistirle. ¡Que tenga un excelente día!'
+      : 'You are welcome! It was a pleasure helping you. If you have more questions, feel free to ask. We are always here to assist you. Have a great day!';
+  }
+
+  // Refurbished/warranty
+  if (lower.includes('refurbish') || lower.includes('reacondicionado') || lower.includes('used equipment') || lower.includes('equipo usado') || lower.includes('garantía') || lower.includes('warranty')) {
+    return isSpanish
+      ? 'Todos nuestros equipos reacondicionados pasan por un riguroso proceso de inspección y certificación. Incluyen: garantía, instalación profesional, capacitación del personal, y soporte técnico post-venta. ¡La misma calidad a una fracción del precio!'
+      : 'All our refurbished equipment undergoes rigorous inspection and certification. They include: warranty, professional installation, staff training, and post-sale technical support. Same quality at a fraction of the price!';
+  }
+
+  // Brands
+  if (lower.includes('ge') || lower.includes('siemens') || lower.includes('philips') || lower.includes('toshiba') || lower.includes('canon') || lower.includes('hitachi') || lower.includes('zeiss') || lower.includes('topcon') || lower.includes('carestream') || lower.includes('shimadzu')) {
+    return isSpanish
+      ? 'Trabajamos con las marcas líderes del mercado: GE Healthcare, Siemens Healthineers, Philips, Canon Medical, Toshiba, Hitachi, Zeiss, Topcon, Carestream, Shimadzu, y más. ¿Hay alguna marca específica que le interese? Contáctenos para verificar disponibilidad.'
+      : 'We work with leading brands: GE Healthcare, Siemens Healthineers, Philips, Canon Medical, Toshiba, Hitachi, Zeiss, Topcon, Carestream, Shimadzu, and more. Is there a specific brand you are interested in? Contact us for availability.';
+  }
+
+  // Default
   if (isSpanish) {
-    return '¡Gracias por su interés en PS Medical Devices! Somos proveedores líderes de equipos de imagenología médica nuevos y reacondicionados con más de 15 años de experiencia.\n\nNuestras especialidades incluyen:\n• Escáneres CT\n• Sistemas MRI\n• Equipos de Rayos X\n• Sistemas de Ultrasonido\n• Equipos de Oftalmología\n\n¿En qué puedo ayudarle hoy? No dude en preguntar sobre equipos específicos, precios, servicios o cualquier otra cosa.\n\n📞 +1 (305) 244-9340\n📧 michelgg0102780@gmail.com';
+    return 'Gracias por su interés en PS Medical Devices. Puedo ayudarle con:\n\n• Escáneres CT y equipos MRI\n• Equipos de Rayos X y Ultrasonido\n• Equipos de Oftalmología\n• Cotizaciones y precios\n• Venta de equipos usados\n• Servicios de reparación y mantenimiento\n\n📞 +1 (305) 244-9340\n📧 michelgg0102780@gmail.com\n\n¿Sobre qué tema le gustaría más información?';
   }
 
-  return 'Thank you for your interest in PS Medical Devices! We are a leading provider of new and refurbished medical imaging equipment with over 15 years of experience.\n\nOur specialties include:\n• CT Scanners\n• MRI Systems\n• X-Ray Equipment\n• Ultrasound Systems\n• Ophthalmology Equipment\n\nHow can I help you today? Feel free to ask about specific equipment, pricing, services, or anything else!\n\n📞 +1 (305) 244-9340\n📧 michelgg0102780@gmail.com';
+  return 'Thank you for your interest in PS Medical Devices. I can help you with:\n\n• CT Scanners and MRI Systems\n• X-Ray and Ultrasound Equipment\n• Ophthalmology Equipment\n• Quotes and Pricing\n• Selling your used equipment\n• Repair and maintenance services\n\n📞 +1 (305) 244-9340\n📧 michelgg0102780@gmail.com\n\nWhat would you like to know more about?';
 }
