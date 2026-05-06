@@ -59,40 +59,62 @@ export async function POST(request: NextRequest) {
 
     let assistantMessage: string;
 
-    // Try OpenAI API first
-    if (process.env.OPENAI_API_KEY) {
-      try {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages,
-            temperature: 0.7,
-            max_tokens: 800,
-          }),
-        });
+    // Try Z-AI SDK first (built-in AI backend, no API key needed)
+    try {
+      const ZAI = (await import('z-ai-web-dev-sdk')).default;
+      const zai = await ZAI.create();
 
-        if (response.ok) {
-          const data = await response.json();
-          assistantMessage =
-            data?.choices?.[0]?.message?.content ||
-            'Lo siento, no pude generar una respuesta. Por favor intente de nuevo o contáctenos directamente.';
-        } else {
-          const errorText = await response.text();
-          console.error('OpenAI API error response:', response.status, errorText);
-          throw new Error(`OpenAI API error: ${response.status}`);
+      const completion = await zai.chat.completions.create({
+        messages: messages as any,
+        temperature: 0.7,
+        max_tokens: 800,
+      });
+
+      assistantMessage =
+        completion?.choices?.[0]?.message?.content ||
+        'Lo siento, no pude generar una respuesta. Por favor intente de nuevo o contáctenos directamente.';
+
+      console.log('Z-AI SDK response successful');
+    } catch (zaiError) {
+      console.error('Z-AI SDK error, trying OpenAI fallback:', zaiError);
+
+      // Try OpenAI API as secondary option
+      if (process.env.OPENAI_API_KEY) {
+        try {
+          const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            },
+            body: JSON.stringify({
+              model: 'gpt-4o-mini',
+              messages,
+              temperature: 0.7,
+              max_tokens: 800,
+            }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            assistantMessage =
+              data?.choices?.[0]?.message?.content ||
+              'Lo siento, no pude generar una respuesta. Por favor intente de nuevo o contáctenos directamente.';
+            console.log('OpenAI API response successful');
+          } else {
+            const errorText = await response.text();
+            console.error('OpenAI API error response:', response.status, errorText);
+            throw new Error(`OpenAI API error: ${response.status}`);
+          }
+        } catch (aiError) {
+          console.error('OpenAI API error, using knowledge base fallback:', aiError);
+          assistantMessage = await getSmartFallback(message);
         }
-      } catch (aiError) {
-        console.error('OpenAI API error, using knowledge base fallback:', aiError);
+      } else {
+        // Ultimate fallback to keyword-based response
+        console.warn('No AI backend available, using knowledge base fallback');
         assistantMessage = await getSmartFallback(message);
       }
-    } else {
-      console.warn('OPENAI_API_KEY not set, using knowledge base fallback');
-      assistantMessage = await getSmartFallback(message);
     }
 
     // Save messages to database for history
