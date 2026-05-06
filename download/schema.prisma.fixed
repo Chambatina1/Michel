@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = "postgresql://micel_admin:yJmfj4wjjHF2YHehcvM907wWWb1A8SWM@dpg-d7t6gvl7vvec73ft84qg-a.oregon-postgres.render.com:5432/michel_db?sslmode=require"
+  directUrl = "postgresql://micel_admin:yJmfj4wjjHF2YHehcvM907wWWb1A8SWM@dpg-d7t6gvl7vvec73ft84qg-a/michel_db?sslmode=require"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  role      String   @default("user") // admin, user
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reviews Review[]
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  category    String   // CT, MRI, X-Ray, Ultrasound, Ophthalmology
+  condition   String   // New, Refurbished
+  price       Float?
+  description String
+  specs       String   // JSON string of specs
+  features    String   // JSON string of features
+  imageUrl    String
+  images      String   // JSON array of image URLs
+  status      String   @default("active") // active, sold, reserved
+  isFeatured  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Lead {
+  id           String   @id @default(cuid())
+  name         String
+  email        String
+  phone        String?
+  company      String?
+  type         String   @default("quote") // quote, sell, support, general
+  productId    String?
+  productName  String?
+  message      String
+  status       String   @default("new") // new, contacted, qualified, converted, closed
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model SellRequest {
+  id            String   @id @default(cuid())
+  name          String
+  email         String
+  phone         String?
+  company       String?
+  equipmentType String
+  manufacturer  String?
+  model         String?
+  condition     String   // Working, Needs Repair, Non-Working, Parts Only
+  description   String?
+  photos        String   // JSON array of photo URLs
+  askingPrice   Float?
+  status        String   @default("pending") // pending, reviewing, offer_made, completed, declined
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  author    String
+  email     String?
+  rating    Int
+  title     String
+  content   String
+  company   String?
+  role      String?
+  isApproved Boolean  @default(false)
+  isFeatured Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+}
+
+model SiteSettings {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+  type  String @default("text") // text, color, image, json
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  sessionId String
+  role      String   // user, assistant
+  content   String
+  createdAt DateTime @default(now())
+}
