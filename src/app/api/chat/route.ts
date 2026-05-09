@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { db } from '@/lib/db';
 
 const SYSTEM_PROMPT = `You are PS Medical Device's AI assistant. You help customers with questions about medical imaging equipment (CT, MRI, X-Ray, Ultrasound), ophthalmology equipment, repair services, selling used equipment, and general inquiries. Be professional, helpful, and knowledgeable. If asked about pricing, suggest requesting a quote through our website. Always mention that we offer expert advisory and after-sales support with every purchase. Respond in the same language the user writes in (if they write in Spanish, respond in Spanish). Keep responses concise (2-4 sentences max unless asked for details).
 
@@ -32,7 +30,7 @@ export async function POST(request: NextRequest) {
     // Load active knowledge entries from database
     let knowledgeContext = '';
     try {
-      const knowledgeEntries = await prisma.aiKnowledge.findMany({
+      const knowledgeEntries = await db.aiKnowledge.findMany({
         where: { isActive: true },
         orderBy: { createdAt: 'desc' },
         take: 50,
@@ -56,7 +54,7 @@ export async function POST(request: NextRequest) {
 
     let assistantMessage: string;
 
-    // Try OpenAI API first (if key is configured)
+    // 1. Try OpenAI API first (if key is configured) — PRIMARY
     if (process.env.OPENAI_API_KEY) {
       try {
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -89,14 +87,68 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // If OpenAI didn't work, use the smart keyword system
+    // 2. Try DeepSeek API as alternative (if key is configured)
+    if (!assistantMessage && process.env.DEEPSEEK_API_KEY) {
+      try {
+        const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: 'deepseek-chat',
+            messages,
+            temperature: 0.7,
+            max_tokens: 500,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          assistantMessage = data?.choices?.[0]?.message?.content || '';
+          if (assistantMessage) {
+            console.log('DeepSeek response successful');
+          }
+        } else {
+          console.error('DeepSeek API error:', response.status);
+          assistantMessage = '';
+        }
+      } catch (aiError) {
+        console.error('DeepSeek error:', aiError);
+        assistantMessage = '';
+      }
+    }
+
+    // 3. Try z-ai-web-dev-sdk as third fallback
+    if (!assistantMessage) {
+      try {
+        const ZAI = (await import('z-ai-web-dev-sdk')).default;
+        const zai = await ZAI.create();
+        const completion = await zai.chat.completions.create({
+          messages: [
+            { role: 'system', content: fullSystemPrompt },
+            { role: 'user', content: message },
+          ],
+        });
+        assistantMessage = completion?.choices?.[0]?.message?.content || '';
+        if (assistantMessage) {
+          console.log('z-ai-web-dev-sdk response successful');
+        }
+      } catch (sdkError) {
+        console.error('z-ai-web-dev-sdk error:', sdkError);
+        assistantMessage = '';
+      }
+    }
+
+    // 4. Last resort: keyword-based fallback using knowledge base
     if (!assistantMessage) {
       assistantMessage = await getSmartFallback(message);
     }
 
     // Save messages to database
     try {
-      await prisma.chatMessage.createMany({
+      await db.chatMessage.createMany({
         data: [
           { sessionId, role: 'user', content: message },
           { sessionId, role: 'assistant', content: assistantMessage },
@@ -124,7 +176,7 @@ async function getSmartFallback(message: string): Promise<string> {
   const lower = message.toLowerCase();
 
   try {
-    const allKnowledge = await prisma.aiKnowledge.findMany({
+    const allKnowledge = await db.aiKnowledge.findMany({
       where: { isActive: true },
     });
 

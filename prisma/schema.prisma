@@ -5,7 +5,6 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = "postgresql://micel_admin:yJmfj4wjjHF2YHehcvM907wWWb1A8SWM@dpg-d7t6gvl7vvec73ft84qg-a.oregon-postgres.render.com:5432/michel_db?sslmode=require"
-  directUrl = "postgresql://micel_admin:yJmfj4wjjHF2YHehcvM907wWWb1A8SWM@dpg-d7t6gvl7vvec73ft84qg-a/michel_db?sslmode=require"
 }
 
 model User {
@@ -33,9 +32,10 @@ model Product {
   imageUrl    String
   images      String   // JSON array of image URLs
   status      String   @default("active") // active, sold, reserved
-  isFeatured  Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isFeatured   Boolean  @default(false)
+  isNegotiable Boolean  @default(false) // price is negotiable / request quote
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model Lead {
@@ -86,6 +86,30 @@ model Review {
   updatedAt DateTime @updatedAt
   userId    String?
   user      User?    @relation(fields: [userId], references: [id])
+}
+
+model Order {
+  id              String   @id @default(cuid())
+  stripeSessionId String?  @unique
+  productId       String?
+  productName     String
+  customerEmail   String?
+  customerName    String?
+  amount          Float
+  currency        String   @default("usd")
+  status          String   @default("pending") // pending, completed, refunded, failed, cancelled
+  metadata        String   // JSON string
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model PaymentConfig {
+  id        String   @id @default(cuid())
+  gateway   String   @unique // stripe, paypal, bank_transfer
+  isActive  Boolean  @default(false)
+  config    String   @default("{}") // JSON string of config (API keys, etc.)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model SiteSettings {

@@ -41,16 +41,16 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
           {/* Column 1: Company Info */}
           <div className="space-y-4">
-            <Link href="/" className="inline-flex items-center gap-2 group">
+            <Link href="/" className="inline-flex items-center gap-3 group">
               <Image
                 src="/images/logo.jpeg"
                 alt="PS Medical Devices"
-                width={45}
-                height={45}
-                className="rounded-lg object-contain transition-transform group-hover:scale-105 brightness-0 invert"
+                width={65}
+                height={65}
+                className="rounded-xl object-contain transition-transform group-hover:scale-105 brightness-0 invert shadow-sm"
               />
               <div className="flex flex-col">
-                <span className="text-lg font-bold leading-tight tracking-tight text-white">
+                <span className="text-xl font-bold leading-tight tracking-tight text-white">
                   PS Medical
                 </span>
                 <span className="text-[10px] font-medium uppercase tracking-widest text-primary-foreground/60">

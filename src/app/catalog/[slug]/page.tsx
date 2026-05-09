@@ -18,6 +18,8 @@ import {
   Activity,
   AlertTriangle,
   Package,
+  CreditCard,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -40,6 +42,48 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { LeadForm } from '@/components/layout/LeadForm';
+
+/* ── Buy Now Button Component ── */
+function BuyNowButton({ productId, productName }: { productId: string; productName: string }) {
+  const [loading, setLoading] = useState(false);
+
+  const handleBuyNow = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/payments/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId }),
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data.error || 'Could not initiate payment. Please try requesting a quote.');
+        setLoading(false);
+      }
+    } catch {
+      alert('Connection error. Please try again or contact us.');
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Button
+      size="lg"
+      className="bg-indigo-600 hover:bg-indigo-700 text-white min-w-[160px]"
+      onClick={handleBuyNow}
+      disabled={loading}
+    >
+      {loading ? (
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+      ) : (
+        <CreditCard className="mr-2 h-4 w-4" />
+      )}
+      {loading ? 'Processing...' : 'Buy Now'}
+    </Button>
+  );
+}
 
 /* ── Types ── */
 interface Product {
@@ -274,6 +318,9 @@ export default function ProductDetailPage() {
 
               {/* CTAs */}
               <div className="flex flex-wrap gap-3 mb-6">
+                {product.price && product.price > 0 && (
+                  <BuyNowButton productId={product.id} productName={product.name} />
+                )}
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button size="lg" className="bg-teal-600 hover:bg-teal-700 text-white min-w-[160px]">

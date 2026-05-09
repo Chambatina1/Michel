@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { db } from '@/lib/db';
 
 // PATCH - Update knowledge entry
 export async function PATCH(
@@ -12,13 +10,13 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
 
-    const existing = await prisma.aiKnowledge.findUnique({ where: { id } });
+    const existing = await db.aiKnowledge.findUnique({ where: { id } });
     if (!existing) {
       return NextResponse.json({ error: 'Knowledge entry not found' }, { status: 404 });
     }
 
     const allowedFields = ['category', 'question', 'answer', 'keywords', 'isActive'];
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
 
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
@@ -26,7 +24,7 @@ export async function PATCH(
       }
     }
 
-    const knowledge = await prisma.aiKnowledge.update({
+    const knowledge = await db.aiKnowledge.update({
       where: { id },
       data: updateData,
     });
@@ -46,12 +44,12 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    const existing = await prisma.aiKnowledge.findUnique({ where: { id } });
+    const existing = await db.aiKnowledge.findUnique({ where: { id } });
     if (!existing) {
       return NextResponse.json({ error: 'Knowledge entry not found' }, { status: 404 });
     }
 
-    await prisma.aiKnowledge.delete({ where: { id } });
+    await db.aiKnowledge.delete({ where: { id } });
 
     return NextResponse.json({ success: true });
   } catch (error) {

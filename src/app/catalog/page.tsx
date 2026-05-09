@@ -15,6 +15,8 @@ import {
   HeartPulse,
   ShieldCheck,
   Activity,
+  CreditCard,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -105,6 +107,46 @@ function ProductGridSkeleton() {
   );
 }
 
+/* ── Quick Buy Button for Cards ── */
+function QuickBuyButton({ productId }: { productId: string }) {
+  const [loading, setLoading] = useState(false);
+
+  const handleQuickBuy = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setLoading(true);
+    try {
+      const res = await fetch('/api/payments/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId }),
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data.error || 'Could not initiate payment.');
+        setLoading(false);
+      }
+    } catch {
+      alert('Connection error. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Button
+      size="sm"
+      className="flex-1 min-w-[100px] bg-indigo-600 text-white hover:bg-indigo-700"
+      onClick={handleQuickBuy}
+      disabled={loading}
+    >
+      {loading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <CreditCard className="mr-1.5 h-3.5 w-3.5" />}
+      {loading ? '...' : 'Buy Now'}
+    </Button>
+  );
+}
+
 /* ── Product Card ── */
 function ProductCard({ product }: { product: Product }) {
   const IconComponent = CATEGORY_ICONS[product.category] || MonitorSmartphone;
@@ -165,6 +207,9 @@ function ProductCard({ product }: { product: Product }) {
                 View Details
               </Link>
             </Button>
+            {product.price && product.price > 0 && (
+              <QuickBuyButton productId={product.id} />
+            )}
             <GetQuoteDialog productId={product.id} productName={product.name} />
           </div>
         </CardContent>

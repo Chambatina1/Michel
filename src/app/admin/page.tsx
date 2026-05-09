@@ -38,6 +38,20 @@ import {
   Brain,
   MessageSquare,
   Tag,
+  CreditCard,
+  ExternalLink,
+  Copy,
+  DollarSign,
+  Link2,
+  Wallet,
+  Shield,
+  Key,
+  BookOpen,
+  Globe,
+  Paintbrush,
+  Share2,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -93,6 +107,7 @@ interface Product {
   description: string;
   status: string;
   isFeatured: boolean;
+  isNegotiable: boolean;
   imageUrl: string;
   createdAt: string;
 }
@@ -162,16 +177,37 @@ interface AiKnowledge {
   updatedAt: string;
 }
 
+interface Order {
+  id: string;
+  stripeSessionId: string | null;
+  productId: string | null;
+  productName: string;
+  customerEmail: string | null;
+  customerName: string | null;
+  amount: number;
+  currency: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface PaymentConfigData {
+  isActive: boolean;
+  config: Record<string, string>;
+}
+
 /* ─── Navigation Items ─── */
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'products', label: 'Products', icon: Package },
+  { id: 'products', label: 'Productos', icon: Package },
+  { id: 'orders', label: 'Ordenes', icon: Wallet },
+  { id: 'payment-gateways', label: 'Pasarelas de Pago', icon: Shield },
   { id: 'leads', label: 'Leads', icon: FileText },
-  { id: 'sell-requests', label: 'Sell Requests', icon: ShoppingBag },
-  { id: 'reviews', label: 'Reviews', icon: Star },
-  { id: 'users', label: 'Users', icon: Users },
-  { id: 'ai-training', label: 'AI Training', icon: Brain },
-  { id: 'settings', label: 'Settings', icon: Settings },
+  { id: 'sell-requests', label: 'Ventas', icon: ShoppingBag },
+  { id: 'reviews', label: 'Resenas', icon: Star },
+  { id: 'users', label: 'Usuarios', icon: Users },
+  { id: 'ai-training', label: 'IA Entrenamiento', icon: Brain },
+  { id: 'settings', label: 'Configuracion', icon: Settings },
 ];
 
 /* ═══════════════════════════════════════════════════════
@@ -214,7 +250,7 @@ export default function AdminPage() {
   // Product form
   const [productForm, setProductForm] = useState({
     name: '', slug: '', category: '', condition: '', price: '', description: '',
-    imageUrl: '', status: 'active', isFeatured: false,
+    imageUrl: '', status: 'active', isFeatured: false, isNegotiable: false,
   });
   const [imageUploading, setImageUploading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string>('');
@@ -232,6 +268,27 @@ export default function AdminPage() {
   const [editingKnowledge, setEditingKnowledge] = useState<AiKnowledge | null>(null);
   const [knowledgeForm, setKnowledgeForm] = useState({ category: 'general', question: '', answer: '', keywords: '' });
   const [knowledgeCategoryFilter, setKnowledgeCategoryFilter] = useState('all');
+
+  // Payment Link state
+  const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
+  const [generatingLinkId, setGeneratingLinkId] = useState<string | null>(null);
+  const [paymentLinks, setPaymentLinks] = useState<Record<string, string>>({});
+
+  // Orders state
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [orderStats, setOrderStats] = useState({ total: 0, revenue: 0 });
+  const [orderStatusFilter, setOrderStatusFilter] = useState('all');
+  const [orderDetailOpen, setOrderDetailOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+
+  // Payment Gateways state
+  const [paymentConfigs, setPaymentConfigs] = useState<Record<string, PaymentConfigData>>({});
+  const [stripeConfig, setStripeConfig] = useState({ publishableKey: '', secretKey: '', webhookSecret: '', testMode: true });
+  const [paypalConfig, setPaypalConfig] = useState({ clientId: '', clientSecret: '', sandboxMode: true });
+  const [bankConfig, setBankConfig] = useState({ bankName: '', accountNumber: '', routingNumber: '', accountHolder: '', swiftBic: '', referenceInstructions: '' });
+  const [stripeGuideOpen, setStripeGuideOpen] = useState(false);
+  const [paypalGuideOpen, setPaypalGuideOpen] = useState(false);
+  const [savingPaymentConfig, setSavingPaymentConfig] = useState(false);
 
   /* ─── Auth ─── */
   useEffect(() => {
@@ -346,13 +403,89 @@ export default function AdminPage() {
     }
   }, []);
 
+  /* ─── Orders & Payment Config Fetching ─── */
+  const fetchOrders = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/orders?limit=100');
+      const data = await res.json();
+      if (res.ok) {
+        setOrders(data.orders || []);
+        setOrderStats({ total: data.total || 0, revenue: data.revenue || 0 });
+      }
+    } catch { toast.error('Error al cargar ordenes'); }
+  }, []);
+
+  const fetchPaymentConfigs = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/payment-config');
+      const data = await res.json();
+      if (res.ok) {
+        const cfgs = data.configs || {};
+        setPaymentConfigs(cfgs);
+        if (cfgs.stripe?.config) {
+          setStripeConfig({
+            publishableKey: cfgs.stripe.config.publishableKey || '',
+            secretKey: cfgs.stripe.config.secretKey || '',
+            webhookSecret: cfgs.stripe.config.webhookSecret || '',
+            testMode: cfgs.stripe.config.testMode !== 'false',
+          });
+        }
+        if (cfgs.paypal?.config) {
+          setPaypalConfig({
+            clientId: cfgs.paypal.config.clientId || '',
+            clientSecret: cfgs.paypal.config.clientSecret || '',
+            sandboxMode: cfgs.paypal.config.sandboxMode !== 'false',
+          });
+        }
+        if (cfgs.bank_transfer?.config) {
+          setBankConfig({
+            bankName: cfgs.bank_transfer.config.bankName || '',
+            accountNumber: cfgs.bank_transfer.config.accountNumber || '',
+            routingNumber: cfgs.bank_transfer.config.routingNumber || '',
+            accountHolder: cfgs.bank_transfer.config.accountHolder || '',
+            swiftBic: cfgs.bank_transfer.config.swiftBic || '',
+            referenceInstructions: cfgs.bank_transfer.config.referenceInstructions || '',
+          });
+        }
+      }
+    } catch { toast.error('Error al cargar configuracion de pagos'); }
+  }, []);
+
+  const savePaymentConfig = async (gateway: string, config: Record<string, string | boolean>, isActive: boolean) => {
+    setSavingPaymentConfig(true);
+    try {
+      const res = await fetch('/api/admin/payment-config', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gateway, config, isActive }),
+      });
+      if (res.ok) { toast.success(`Configuracion de ${gateway} guardada`); fetchPaymentConfigs(); }
+      else toast.error('Error al guardar configuracion');
+    } catch { toast.error('Error al guardar'); }
+    finally { setSavingPaymentConfig(false); }
+  };
+
+  const updateOrderStatus = async (id: string, status: string) => {
+    try {
+      const res = await fetch(`/api/admin/orders/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      if (res.ok) { toast.success('Estado de orden actualizado'); fetchOrders(); }
+      else toast.error('Error al actualizar');
+    } catch { toast.error('Error al actualizar'); }
+  };
+
   useEffect(() => {
     if (!isAuthenticated) return;
     fetchDashboardData();
     fetchUsers();
     fetchSettings();
+    fetchPaymentConfigs();
     if (activeTab === 'ai-training') fetchAiKnowledge();
-  }, [isAuthenticated, fetchDashboardData, fetchUsers, fetchSettings, activeTab, fetchAiKnowledge]);
+    if (activeTab === 'orders') fetchOrders();
+  }, [isAuthenticated, fetchDashboardData, fetchUsers, fetchSettings, fetchPaymentConfigs, activeTab, fetchAiKnowledge, fetchOrders]);
 
   /* ─── AI Knowledge actions ─── */
   const openKnowledgeDialog = (entry?: AiKnowledge) => {
@@ -435,12 +568,13 @@ export default function AdminPage() {
         imageUrl: product.imageUrl,
         status: product.status,
         isFeatured: product.isFeatured,
+        isNegotiable: product.isNegotiable || false,
       });
     } else {
       setEditingProduct(null);
       setProductForm({
         name: '', slug: '', category: '', condition: '', price: '', description: '',
-        imageUrl: '', status: 'active', isFeatured: false,
+        imageUrl: '', status: 'active', isFeatured: false, isNegotiable: false,
       });
     }
     // Set preview when editing
@@ -547,6 +681,39 @@ export default function AdminPage() {
       }
     } catch {
       toast.error('Failed to save product');
+    }
+  };
+
+  /* ─── Product Status & Featured (correct API calls) ─── */
+  const updateProductStatus = async (id: string, status: string) => {
+    try {
+      const res = await fetch(`/api/admin/products/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      if (res.ok) {
+        toast.success('Product status updated');
+        fetchDashboardData();
+      } else toast.error('Failed to update product status');
+    } catch {
+      toast.error('Update failed');
+    }
+  };
+
+  const toggleProductFeatured = async (product: Product) => {
+    try {
+      const res = await fetch(`/api/admin/products/${product.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isFeatured: !product.isFeatured }),
+      });
+      if (res.ok) {
+        toast.success('Product featured status toggled');
+        fetchDashboardData();
+      } else toast.error('Failed to update');
+    } catch {
+      toast.error('Update failed');
     }
   };
 
@@ -743,11 +910,45 @@ export default function AdminPage() {
     return colors[status] || 'bg-gray-100 text-gray-700 border-gray-200';
   };
 
+  /* ─── Payment Link actions ─── */
+  const generatePaymentLink = async (productId: string) => {
+    setGeneratingLinkId(productId);
+    try {
+      const res = await fetch('/api/payments/create-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPaymentLinks(prev => ({ ...prev, [productId]: data.url }));
+        toast.success('Payment link generated!');
+      } else {
+        const d = await res.json();
+        toast.error(d.error || 'Failed to generate link');
+      }
+    } catch {
+      toast.error('Failed to generate payment link');
+    } finally {
+      setGeneratingLinkId(null);
+    }
+  };
+
+  const copyPaymentLink = (productId: string, url: string) => {
+    navigator.clipboard.writeText(url);
+    setCopiedLinkId(productId);
+    toast.success('Link copied to clipboard!');
+    setTimeout(() => setCopiedLinkId(null), 2000);
+  };
+
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
       <Star key={i} className={`h-3.5 w-3.5 ${i < rating ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}`} />
     ));
   };
+
+  const filteredOrders = orderStatusFilter === 'all' ? orders : orders.filter(o => o.status === orderStatusFilter);
+  const [settingsSection, setSettingsSection] = useState('general');
 
   /* ═══════════════════════════════════════════════════════
    LOGIN SCREEN
@@ -1083,7 +1284,7 @@ export default function AdminPage() {
                                 <TableCell className="pl-4 font-medium">{product.name}</TableCell>
                                 <TableCell>{product.category}</TableCell>
                                 <TableCell>{product.condition}</TableCell>
-                                <TableCell>{product.price ? `$${product.price.toLocaleString()}` : 'Contact'}</TableCell>
+                                <TableCell>{product.isNegotiable ? <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200">Negociable</Badge> : (product.price ? `$${product.price.toLocaleString()}` : 'Contacto')}</TableCell>
                                 <TableCell>
                                   <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusColor(product.status)}`}>
                                     {product.status}
@@ -1101,10 +1302,10 @@ export default function AdminPage() {
                                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openProductDialog(product)} title="Edit">
                                       <Pencil className="h-3.5 w-3.5" />
                                     </Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => updateSellStatus(product.id, product.status === 'active' ? 'reserved' : 'active')} title="Toggle Status">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => updateProductStatus(product.id, product.status === 'active' ? 'reserved' : 'active')} title="Toggle Status">
                                       <RefreshCw className="h-3.5 w-3.5" />
                                     </Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleReviewFeatured({ ...product, isApproved: product.isFeatured, isFeatured: product.isFeatured } as unknown as Review)} title="Toggle Featured">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleProductFeatured(product)} title="Toggle Featured">
                                       <Star className={`h-3.5 w-3.5 ${product.isFeatured ? 'fill-amber-400 text-amber-400' : ''}`} />
                                     </Button>
                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600" onClick={() => confirmDelete('product', product.id, product.name)} title="Delete">
@@ -1122,6 +1323,145 @@ export default function AdminPage() {
                           </TableBody>
                         </Table>
                       </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
+              {/* ─── ORDERS TAB ─── */}
+              {activeTab === 'orders' && (
+                <div className="space-y-6">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">Ordenes</h3>
+                      <p className="text-sm text-gray-500">{orders.length} ordenes totales</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Filter className="h-4 w-4 text-gray-400" />
+                      <Select value={orderStatusFilter} onValueChange={setOrderStatusFilter}>
+                        <SelectTrigger className="w-[160px]"><SelectValue placeholder="Filtrar" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos</SelectItem>
+                          <SelectItem value="pending">Pendiente</SelectItem>
+                          <SelectItem value="completed">Completado</SelectItem>
+                          <SelectItem value="refunded">Reembolsado</SelectItem>
+                          <SelectItem value="failed">Fallido</SelectItem>
+                          <SelectItem value="cancelled">Cancelado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <Card className="border-0 shadow-sm"><CardContent className="p-5"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600"><Wallet className="h-5 w-5" /></div><div><p className="text-xs text-gray-500">Total Ordenes</p><p className="text-2xl font-bold text-gray-900">{orderStats.total}</p></div></div></CardContent></Card>
+                    <Card className="border-0 shadow-sm"><CardContent className="p-5"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600"><Check className="h-5 w-5" /></div><div><p className="text-xs text-gray-500">Completadas</p><p className="text-2xl font-bold text-gray-900">{orders.filter(o => o.status === 'completed').length}</p></div></div></CardContent></Card>
+                    <Card className="border-0 shadow-sm"><CardContent className="p-5"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-100 text-teal-600"><DollarSign className="h-5 w-5" /></div><div><p className="text-xs text-gray-500">Ingresos Totales</p><p className="text-2xl font-bold text-gray-900">${orderStats.revenue.toLocaleString()}</p></div></div></CardContent></Card>
+                  </div>
+                  <Card className="border-0 shadow-sm"><CardContent className="p-0"><div className="overflow-x-auto"><Table><TableHeader><TableRow className="bg-gray-50/80"><TableHead className="pl-4">Producto</TableHead><TableHead>Cliente</TableHead><TableHead>Email</TableHead><TableHead>Monto</TableHead><TableHead>Estado</TableHead><TableHead>Fecha</TableHead><TableHead className="pr-4">Acciones</TableHead></TableRow></TableHeader><TableBody>
+                    {filteredOrders.map(order => (
+                      <TableRow key={order.id}>
+                        <TableCell className="pl-4 font-medium text-sm">{order.productName}</TableCell>
+                        <TableCell className="text-sm">{order.customerName || 'N/A'}</TableCell>
+                        <TableCell className="text-sm text-gray-500">{order.customerEmail || 'N/A'}</TableCell>
+                        <TableCell className="font-semibold text-sm">${order.amount.toLocaleString()}</TableCell>
+                        <TableCell><Select value={order.status} onValueChange={v => updateOrderStatus(order.id, v)}><SelectTrigger className="h-7 w-[130px] text-xs"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="pending">Pendiente</SelectItem><SelectItem value="completed">Completado</SelectItem><SelectItem value="refunded">Reembolsado</SelectItem><SelectItem value="failed">Fallido</SelectItem><SelectItem value="cancelled">Cancelado</SelectItem></SelectContent></Select></TableCell>
+                        <TableCell className="text-sm text-gray-500">{formatDate(order.createdAt)}</TableCell>
+                        <TableCell className="pr-4"><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setSelectedOrder(order); setOrderDetailOpen(true); }}><Eye className="h-3.5 w-3.5" /></Button></TableCell>
+                      </TableRow>
+                    ))}
+                    {filteredOrders.length === 0 && (<TableRow><TableCell colSpan={7} className="py-12 text-center text-gray-400">No hay ordenes</TableCell></TableRow>)}
+                  </TableBody></Table></div></CardContent></Card>
+                </div>
+              )}
+
+              {/* ─── PAYMENT GATEWAYS TAB ─── */}
+              {activeTab === 'payment-gateways' && (
+                <div className="space-y-6">
+                  <div><h3 className="text-lg font-semibold text-gray-900">Pasarelas de Pago</h3><p className="text-sm text-gray-500">Configura metodos de pago y vincula tus cuentas</p></div>
+
+                  {/* STRIPE */}
+                  <Card className="border-0 shadow-sm border-l-4 border-l-indigo-500">
+                    <CardHeader className="pb-3"><div className="flex items-center justify-between"><CardTitle className="text-base font-semibold flex items-center gap-2"><CreditCard className="h-5 w-5 text-indigo-600" />Stripe</CardTitle><div className="flex items-center gap-3"><span className={`text-xs px-2 py-1 rounded-full ${paymentConfigs.stripe?.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>{paymentConfigs.stripe?.isActive ? 'Activo' : 'Inactivo'}</span><div className="flex items-center gap-2"><Label className="text-xs">Activar</Label><Switch checked={paymentConfigs.stripe?.isActive || false} onCheckedChange={v => savePaymentConfig('stripe', stripeConfig, v)} /></div></div></div></CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2"><Label>Clave Publicable (pk_xxx)</Label><Input value={stripeConfig.publishableKey} onChange={e => setStripeConfig({...stripeConfig, publishableKey: e.target.value})} placeholder="pk_test_xxxxx" type="password" /></div>
+                        <div className="space-y-2"><Label>Clave Secreta (sk_xxx)</Label><Input value={stripeConfig.secretKey} onChange={e => setStripeConfig({...stripeConfig, secretKey: e.target.value})} placeholder="sk_test_xxxxx" type="password" /></div>
+                        <div className="space-y-2"><Label>Secreto Webhook (whsec_xxx)</Label><Input value={stripeConfig.webhookSecret} onChange={e => setStripeConfig({...stripeConfig, webhookSecret: e.target.value})} placeholder="whsec_xxxxx" type="password" /></div>
+                        <div className="flex items-center gap-3 pt-6"><Switch checked={stripeConfig.testMode} onCheckedChange={v => setStripeConfig({...stripeConfig, testMode: v})} /><Label>Modo de Prueba</Label><span className="text-xs text-gray-400">({stripeConfig.testMode ? 'Test' : 'Produccion'})</span></div>
+                      </div>
+                      <div className="flex gap-2 pt-2">
+                        <Button onClick={() => savePaymentConfig('stripe', stripeConfig, paymentConfigs.stripe?.isActive || false)} disabled={savingPaymentConfig} className="gap-2 bg-indigo-600 hover:bg-indigo-700"><Save className="h-4 w-4" />Guardar Stripe</Button>
+                        <Button variant="outline" onClick={() => setStripeGuideOpen(!stripeGuideOpen)} className="gap-2"><BookOpen className="h-4 w-4" />{stripeGuideOpen ? 'Ocultar' : 'Ver'} Guia Paso a Paso</Button>
+                      </div>
+                      {stripeGuideOpen && (
+                        <div className="rounded-lg bg-indigo-50 border border-indigo-200 p-4 space-y-3 mt-2">
+                          <p className="font-semibold text-indigo-800 text-sm">Guia Paso a Paso - Configurar Stripe</p>
+                          <ol className="space-y-2 text-sm text-indigo-900">{[
+                            'Crea tu cuenta en https://stripe.com (es gratis)',
+                            'Ve a la seccion "Desarrolladores" > "Claves API"',
+                            'Copia tu "Clave publicable" (empieza con pk_test_) y pegala arriba',
+                            'Copia tu "Clave secreta" (empieza con sk_test_) y pegala arriba',
+                            'Para webhooks ve a "Desarrolladores" > "Webhooks" y haz clic en "Agregar endpoint"',
+                            'La URL del endpoint es: TU_DOMINIO/api/payments/webhook',
+                            'Selecciona estos eventos: checkout.session.completed, payment_intent.succeeded, payment_intent.payment_failed, charge.refunded',
+                            'Copia el "Secreto de firma del webhook" (empieza con whsec_) y pegalo arriba',
+                            'Haz clic en "Guardar Stripe" arriba',
+                            'Para pasar a produccion, cambia las claves a las versiones "live" (pk_live_, sk_live_)',
+                          ].map((step, i) => (
+                            <li key={i} className="flex items-start gap-2"><span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white text-xs font-bold">{i+1}</span><span>{step}</span></li>
+                          ))}</ol>
+                          <p className="text-xs text-indigo-600">Dashboard de Stripe: <a href="https://dashboard.stripe.com" target="_blank" rel="noopener" className="underline">dashboard.stripe.com</a></p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* PAYPAL */}
+                  <Card className="border-0 shadow-sm border-l-4 border-l-blue-500">
+                    <CardHeader className="pb-3"><div className="flex items-center justify-between"><CardTitle className="text-base font-semibold flex items-center gap-2"><Shield className="h-5 w-5 text-blue-600" />PayPal</CardTitle><div className="flex items-center gap-3"><span className={`text-xs px-2 py-1 rounded-full ${paymentConfigs.paypal?.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>{paymentConfigs.paypal?.isActive ? 'Activo' : 'Inactivo'}</span><div className="flex items-center gap-2"><Label className="text-xs">Activar</Label><Switch checked={paymentConfigs.paypal?.isActive || false} onCheckedChange={v => savePaymentConfig('paypal', paypalConfig, v)} /></div></div></div></CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2"><Label>Client ID</Label><Input value={paypalConfig.clientId} onChange={e => setPaypalConfig({...paypalConfig, clientId: e.target.value})} placeholder="Axxxxxxxxxxxxx..." type="password" /></div>
+                        <div className="space-y-2"><Label>Client Secret</Label><Input value={paypalConfig.clientSecret} onChange={e => setPaypalConfig({...paypalConfig, clientSecret: e.target.value})} placeholder="Exxxxxxxxxxxxxx..." type="password" /></div>
+                        <div className="flex items-center gap-3 pt-6"><Switch checked={paypalConfig.sandboxMode} onCheckedChange={v => setPaypalConfig({...paypalConfig, sandboxMode: v})} /><Label>Modo Sandbox (Prueba)</Label></div>
+                      </div>
+                      <div className="flex gap-2 pt-2">
+                        <Button onClick={() => savePaymentConfig('paypal', paypalConfig, paymentConfigs.paypal?.isActive || false)} disabled={savingPaymentConfig} className="gap-2 bg-blue-600 hover:bg-blue-700"><Save className="h-4 w-4" />Guardar PayPal</Button>
+                        <Button variant="outline" onClick={() => setPaypalGuideOpen(!paypalGuideOpen)} className="gap-2"><BookOpen className="h-4 w-4" />{paypalGuideOpen ? 'Ocultar' : 'Ver'} Guia Paso a Paso</Button>
+                      </div>
+                      {paypalGuideOpen && (
+                        <div className="rounded-lg bg-blue-50 border border-blue-200 p-4 space-y-3 mt-2">
+                          <p className="font-semibold text-blue-800 text-sm">Guia Paso a Paso - Configurar PayPal</p>
+                          <ol className="space-y-2 text-sm text-blue-900">{[
+                            'Ve a https://developer.paypal.com y crea una cuenta',
+                            'En el Dashboard ve a "Applications" > "My Applications"',
+                            'Haz clic en "Create App" y dale un nombre',
+                            'Copia el "Client ID" y pegalo arriba',
+                            'Haz clic en "Show" para ver el "Client Secret" y pegalo arriba',
+                            'Configura las URLs de retorno (return URL) en la configuracion de la app',
+                            'Para pruebas usa Sandbox, para produccion usa Live',
+                            'Haz clic en "Guardar PayPal" arriba',
+                          ].map((step, i) => (
+                            <li key={i} className="flex items-start gap-2"><span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white text-xs font-bold">{i+1}</span><span>{step}</span></li>
+                          ))}</ol>
+                          <p className="text-xs text-blue-600">Dashboard PayPal: <a href="https://developer.paypal.com/dashboard" target="_blank" rel="noopener" className="underline">developer.paypal.com/dashboard</a></p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* BANK TRANSFER */}
+                  <Card className="border-0 shadow-sm border-l-4 border-l-emerald-500">
+                    <CardHeader className="pb-3"><div className="flex items-center justify-between"><CardTitle className="text-base font-semibold flex items-center gap-2"><Building2 className="h-5 w-5 text-emerald-600" />Transferencia Bancaria</CardTitle><div className="flex items-center gap-3"><span className={`text-xs px-2 py-1 rounded-full ${paymentConfigs.bank_transfer?.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>{paymentConfigs.bank_transfer?.isActive ? 'Activo' : 'Inactivo'}</span><div className="flex items-center gap-2"><Label className="text-xs">Activar</Label><Switch checked={paymentConfigs.bank_transfer?.isActive || false} onCheckedChange={v => savePaymentConfig('bank_transfer', bankConfig, v)} /></div></div></div></CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2"><Label>Nombre del Banco</Label><Input value={bankConfig.bankName} onChange={e => setBankConfig({...bankConfig, bankName: e.target.value})} placeholder="Chase, Bank of America..." /></div>
+                        <div className="space-y-2"><Label>Numero de Cuenta</Label><Input value={bankConfig.accountNumber} onChange={e => setBankConfig({...bankConfig, accountNumber: e.target.value})} placeholder="xxxx-xxxx-xxxx" /></div>
+                        <div className="space-y-2"><Label>Routing Number</Label><Input value={bankConfig.routingNumber} onChange={e => setBankConfig({...bankConfig, routingNumber: e.target.value})} placeholder="xxxxxxxxx" /></div>
+                        <div className="space-y-2"><Label>Titular de la Cuenta</Label><Input value={bankConfig.accountHolder} onChange={e => setBankConfig({...bankConfig, accountHolder: e.target.value})} placeholder="PS Medical Devices LLC" /></div>
+                        <div className="space-y-2"><Label>SWIFT / BIC</Label><Input value={bankConfig.swiftBic} onChange={e => setBankConfig({...bankConfig, swiftBic: e.target.value})} placeholder="CHASUS33" /></div>
+                        <div className="space-y-2 col-span-2"><Label>Instrucciones de Referencia</Label><Textarea value={bankConfig.referenceInstructions} onChange={e => setBankConfig({...bankConfig, referenceInstructions: e.target.value})} placeholder="Incluya su nombre y numero de orden en la referencia..." rows={2} /></div>
+                      </div>
+                      <Button onClick={() => savePaymentConfig('bank_transfer', bankConfig, paymentConfigs.bank_transfer?.isActive || false)} disabled={savingPaymentConfig} className="gap-2 bg-emerald-600 hover:bg-emerald-700"><Save className="h-4 w-4" />Guardar Transferencia</Button>
                     </CardContent>
                   </Card>
                 </div>
@@ -1466,87 +1806,43 @@ export default function AdminPage() {
 
               {/* ─── SETTINGS TAB ─── */}
               {activeTab === 'settings' && (
-                <div className="space-y-6 max-w-2xl">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Site Settings</h3>
-                    <p className="text-sm text-gray-500">Manage your website configuration</p>
+                <div className="space-y-6 max-w-3xl">
+                  <div><h3 className="text-lg font-semibold text-gray-900">Configuracion del Sitio</h3><p className="text-sm text-gray-500">Administra toda la configuracion de tu sitio web</p></div>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {[
+                      { id: 'general', label: 'Informacion General', icon: Building2 },
+                      { id: 'appearance', label: 'Apariencia', icon: Palette },
+                      { id: 'hero', label: 'Seccion Hero', icon: Globe },
+                      { id: 'social', label: 'Redes Sociales', icon: Share2 },
+                      { id: 'messages', label: 'Mensajes', icon: MessageSquare },
+                      { id: 'whatsapp', label: 'WhatsApp', icon: Phone },
+                      { id: 'seo', label: 'SEO', icon: Search },
+                    ].map(sec => (
+                      <Button key={sec.id} variant={settingsSection === sec.id ? 'default' : 'outline'} size="sm" onClick={() => setSettingsSection(sec.id)} className="gap-1.5"><sec.icon className="h-3.5 w-3.5" />{sec.label}</Button>
+                    ))}
                   </div>
-
-                  <Card className="border-0 shadow-sm">
-                    <CardHeader>
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Building2 className="h-4 w-4" /> General Information
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div className="space-y-2">
-                          <Label>Company Name</Label>
-                          <Input value={settings.company_name || ''} onChange={(e) => setSettings({ ...settings, company_name: e.target.value })} placeholder="PS Medical Devices" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Tagline</Label>
-                          <Input value={settings.tagline || ''} onChange={(e) => setSettings({ ...settings, tagline: e.target.value })} placeholder="Your trusted partner..." />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Phone</Label>
-                          <Input value={settings.phone || ''} onChange={(e) => setSettings({ ...settings, phone: e.target.value })} placeholder="+1 (800) 555-0199" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Email</Label>
-                          <Input value={settings.email || ''} onChange={(e) => setSettings({ ...settings, email: e.target.value })} placeholder="info@psmedicaldevices.com" />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Address</Label>
-                        <Input value={settings.address || ''} onChange={(e) => setSettings({ ...settings, address: e.target.value })} placeholder="123 Medical Dr, Houston, TX 77001" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Business Hours</Label>
-                        <Input value={settings.hours || ''} onChange={(e) => setSettings({ ...settings, hours: e.target.value })} placeholder="Monday - Friday, 8:00 AM - 6:00 PM CST" />
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-0 shadow-sm">
-                    <CardHeader>
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Palette className="h-4 w-4" /> Color Settings
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div className="space-y-2">
-                          <Label>Primary Color</Label>
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="color"
-                              value={settings.primary_color || '#1a2a5e'}
-                              onChange={(e) => setSettings({ ...settings, primary_color: e.target.value })}
-                              className="h-10 w-10 cursor-pointer rounded-lg border border-gray-200 p-0.5"
-                            />
-                            <Input value={settings.primary_color || '#1a2a5e'} onChange={(e) => setSettings({ ...settings, primary_color: e.target.value })} className="flex-1 font-mono text-sm" />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Accent Color</Label>
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="color"
-                              value={settings.accent_color || '#0d9488'}
-                              onChange={(e) => setSettings({ ...settings, accent_color: e.target.value })}
-                              className="h-10 w-10 cursor-pointer rounded-lg border border-gray-200 p-0.5"
-                            />
-                            <Input value={settings.accent_color || '#0d9488'} onChange={(e) => setSettings({ ...settings, accent_color: e.target.value })} className="flex-1 font-mono text-sm" />
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Button onClick={handleSaveSettings} className="gap-2 bg-teal-600 hover:bg-teal-700">
-                    <Save className="h-4 w-4" /> Save Settings
-                  </Button>
+                  {settingsSection === 'general' && (
+                    <Card className="border-0 shadow-sm"><CardHeader><CardTitle className="text-base flex items-center gap-2"><Building2 className="h-4 w-4" />Informacion General</CardTitle></CardHeader><CardContent className="space-y-4"><div className="grid grid-cols-1 gap-4 sm:grid-cols-2"><div className="space-y-2"><Label>Nombre de la Empresa</Label><Input value={settings.company_name || ''} onChange={e => setSettings({...settings, company_name: e.target.value})} placeholder="PS Medical Devices" /></div><div className="space-y-2"><Label>Eslogan</Label><Input value={settings.tagline || ''} onChange={e => setSettings({...settings, tagline: e.target.value})} placeholder="Tu socio de confianza..." /></div><div className="space-y-2"><Label>Telefono</Label><Input value={settings.phone || ''} onChange={e => setSettings({...settings, phone: e.target.value})} placeholder="+1 (305) 244-9340" /></div><div className="space-y-2"><Label>Email</Label><Input value={settings.email || ''} onChange={e => setSettings({...settings, email: e.target.value})} placeholder="info@psmedicaldevices.com" /></div></div><div className="space-y-2"><Label>Direccion</Label><Input value={settings.address || ''} onChange={e => setSettings({...settings, address: e.target.value})} placeholder="123 Medical Dr, Houston, TX 77001" /></div><div className="space-y-2"><Label>Horario de Atencion</Label><Input value={settings.hours || ''} onChange={e => setSettings({...settings, hours: e.target.value})} placeholder="Lunes a Viernes, 8:00 AM - 6:00 PM" /></div></CardContent></Card>
+                  )}
+                  {settingsSection === 'appearance' && (
+                    <Card className="border-0 shadow-sm"><CardHeader><CardTitle className="text-base flex items-center gap-2"><Palette className="h-4 w-4" />Apariencia</CardTitle></CardHeader><CardContent className="space-y-4"><div className="grid grid-cols-1 gap-4 sm:grid-cols-2"><div className="space-y-2"><Label>Color Primario</Label><div className="flex items-center gap-3"><input type="color" value={settings.primary_color || '#1a2a5e'} onChange={e => setSettings({...settings, primary_color: e.target.value})} className="h-10 w-10 cursor-pointer rounded-lg border p-0.5" /><Input value={settings.primary_color || '#1a2a5e'} onChange={e => setSettings({...settings, primary_color: e.target.value})} className="flex-1 font-mono text-sm" /></div></div><div className="space-y-2"><Label>Color de Acento</Label><div className="flex items-center gap-3"><input type="color" value={settings.accent_color || '#0d9488'} onChange={e => setSettings({...settings, accent_color: e.target.value})} className="h-10 w-10 cursor-pointer rounded-lg border p-0.5" /><Input value={settings.accent_color || '#0d9488'} onChange={e => setSettings({...settings, accent_color: e.target.value})} className="flex-1 font-mono text-sm" /></div></div></div></CardContent></Card>
+                  )}
+                  {settingsSection === 'hero' && (
+                    <Card className="border-0 shadow-sm"><CardHeader><CardTitle className="text-base flex items-center gap-2"><Globe className="h-4 w-4" />Seccion Hero (Inicio)</CardTitle></CardHeader><CardContent className="space-y-4"><div className="space-y-2"><Label>Titulo Principal</Label><Input value={settings.hero_title || ''} onChange={e => setSettings({...settings, hero_title: e.target.value})} placeholder="Equipos Medicos de Primera Calidad" /></div><div className="space-y-2"><Label>Subtitulo</Label><Textarea value={settings.hero_subtitle || ''} onChange={e => setSettings({...settings, hero_subtitle: e.target.value})} placeholder="Mas de 20 anos de experiencia en equipos medicos..." rows={2} /></div><div className="space-y-2"><Label>Texto del Boton CTA</Label><Input value={settings.hero_cta_text || ''} onChange={e => setSettings({...settings, hero_cta_text: e.target.value})} placeholder="Solicitar Cotizacion" /></div></CardContent></Card>
+                  )}
+                  {settingsSection === 'social' && (
+                    <Card className="border-0 shadow-sm"><CardHeader><CardTitle className="text-base flex items-center gap-2"><Share2 className="h-4 w-4" />Redes Sociales</CardTitle></CardHeader><CardContent className="space-y-4"><div className="grid grid-cols-1 gap-4 sm:grid-cols-2"><div className="space-y-2"><Label>Facebook</Label><Input value={settings.facebook_url || ''} onChange={e => setSettings({...settings, facebook_url: e.target.value})} placeholder="https://facebook.com/..." /></div><div className="space-y-2"><Label>Instagram</Label><Input value={settings.instagram_url || ''} onChange={e => setSettings({...settings, instagram_url: e.target.value})} placeholder="https://instagram.com/..." /></div><div className="space-y-2"><Label>LinkedIn</Label><Input value={settings.linkedin_url || ''} onChange={e => setSettings({...settings, linkedin_url: e.target.value})} placeholder="https://linkedin.com/..." /></div><div className="space-y-2"><Label>Twitter / X</Label><Input value={settings.twitter_url || ''} onChange={e => setSettings({...settings, twitter_url: e.target.value})} placeholder="https://twitter.com/..." /></div><div className="space-y-2"><Label>YouTube</Label><Input value={settings.youtube_url || ''} onChange={e => setSettings({...settings, youtube_url: e.target.value})} placeholder="https://youtube.com/..." /></div><div className="space-y-2"><Label>TikTok</Label><Input value={settings.tiktok_url || ''} onChange={e => setSettings({...settings, tiktok_url: e.target.value})} placeholder="https://tiktok.com/..." /></div></div></CardContent></Card>
+                  )}
+                  {settingsSection === 'messages' && (
+                    <Card className="border-0 shadow-sm"><CardHeader><CardTitle className="text-base flex items-center gap-2"><MessageSquare className="h-4 w-4" />Mensajes Personalizados</CardTitle></CardHeader><CardContent className="space-y-4"><div className="space-y-2"><Label>Mensaje de Agradecimiento (Contacto)</Label><Textarea value={settings.contact_thank_you || ''} onChange={e => setSettings({...settings, contact_thank_you: e.target.value})} placeholder="Gracias por contactarnos. Nos comunicaremos contigo pronto..." rows={3} /></div><div className="space-y-2"><Label>Mensaje de Solicitud de Cotizacion</Label><Textarea value={settings.quote_request_message || ''} onChange={e => setSettings({...settings, quote_request_message: e.target.value})} placeholder="Hemos recibido tu solicitud de cotizacion..." rows={3} /></div><div className="space-y-2"><Label>Mensaje de Respuesta Automatica</Label><Textarea value={settings.auto_reply_message || ''} onChange={e => setSettings({...settings, auto_reply_message: e.target.value})} placeholder="Hola! Gracias por escribirnos. Un asesor se comunicara contigo..." rows={3} /></div></CardContent></Card>
+                  )}
+                  {settingsSection === 'whatsapp' && (
+                    <Card className="border-0 shadow-sm"><CardHeader><CardTitle className="text-base flex items-center gap-2"><Phone className="h-4 w-4" />Configuracion WhatsApp</CardTitle></CardHeader><CardContent className="space-y-4"><div className="space-y-2"><Label>Numero de WhatsApp</Label><Input value={settings.whatsapp_phone || ''} onChange={e => setSettings({...settings, whatsapp_phone: e.target.value})} placeholder="+13052449340" /></div><div className="space-y-2"><Label>Mensaje de Bienvenida</Label><Textarea value={settings.whatsapp_message || ''} onChange={e => setSettings({...settings, whatsapp_message: e.target.value})} placeholder="Hola! Bienvenido a PS Medical Devices. En que podemos ayudarte?" rows={3} /></div><div className="space-y-2"><Label>Horario de Atencion WhatsApp</Label><Input value={settings.whatsapp_hours || ''} onChange={e => setSettings({...settings, whatsapp_hours: e.target.value})} placeholder="Lunes a Viernes, 8:00 AM - 6:00 PM EST" /></div></CardContent></Card>
+                  )}
+                  {settingsSection === 'seo' && (
+                    <Card className="border-0 shadow-sm"><CardHeader><CardTitle className="text-base flex items-center gap-2"><Search className="h-4 w-4" />SEO (Meta Tags)</CardTitle></CardHeader><CardContent className="space-y-4"><div className="space-y-2"><Label>Meta Titulo</Label><Input value={settings.meta_title || ''} onChange={e => setSettings({...settings, meta_title: e.target.value})} placeholder="PS Medical Devices - Equipos Medicos" /></div><div className="space-y-2"><Label>Meta Descripcion</Label><Textarea value={settings.meta_description || ''} onChange={e => setSettings({...settings, meta_description: e.target.value})} placeholder="PS Medical Devices ofrece equipos medicos de primera calidad..." rows={3} /></div><div className="space-y-2"><Label>Meta Keywords</Label><Input value={settings.meta_keywords || ''} onChange={e => setSettings({...settings, meta_keywords: e.target.value})} placeholder="equipos medicos, CT, MRI, ultrasound, refurbished" /></div></CardContent></Card>
+                  )}
+                  <Button onClick={handleSaveSettings} className="gap-2 bg-teal-600 hover:bg-teal-700"><Save className="h-4 w-4" />Guardar Configuracion</Button>
                 </div>
               )}
             </>
@@ -1601,8 +1897,9 @@ export default function AdminPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Price ($)</Label>
-                <Input type="number" value={productForm.price} onChange={(e) => setProductForm({ ...productForm, price: e.target.value })} placeholder="0.00" />
+                <Label>Precio ($)</Label>
+                <Input type="number" value={productForm.price} onChange={(e) => setProductForm({ ...productForm, price: e.target.value })} placeholder="0.00" disabled={productForm.isNegotiable} />
+                {productForm.isNegotiable && <p className="text-xs text-amber-600">Precio negociable - los clientes solicitaran cotizacion</p>}
               </div>
               <div className="space-y-2">
                 <Label>Status</Label>
@@ -1691,7 +1988,11 @@ export default function AdminPage() {
             </div>
             <div className="flex items-center gap-3">
               <Switch checked={productForm.isFeatured} onCheckedChange={(v) => setProductForm({ ...productForm, isFeatured: v })} />
-              <Label>Featured Product</Label>
+              <Label>Producto Destacado</Label>
+            </div>
+            <div className="flex items-center gap-3">
+              <Switch checked={productForm.isNegotiable} onCheckedChange={(v) => setProductForm({ ...productForm, isNegotiable: v, price: v ? '' : productForm.price })} />
+              <Label>Precio Negociable (Solicitar Cotizacion)</Label>
             </div>
           </div>
           <DialogFooter>
@@ -2052,6 +2353,27 @@ export default function AdminPage() {
               {editingKnowledge ? 'Update' : 'Add Entry'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Order Detail Dialog */}
+      <Dialog open={orderDetailOpen} onOpenChange={setOrderDetailOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Detalle de Orden</DialogTitle></DialogHeader>
+          {selectedOrder && (
+            <div className="space-y-3 py-2">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div><span className="text-gray-500">Producto:</span><p className="font-medium">{selectedOrder.productName}</p></div>
+                <div><span className="text-gray-500">Monto:</span><p className="font-bold text-lg">${selectedOrder.amount.toLocaleString()}</p></div>
+                <div><span className="text-gray-500">Cliente:</span><p className="font-medium">{selectedOrder.customerName || 'N/A'}</p></div>
+                <div><span className="text-gray-500">Email:</span><p className="font-medium">{selectedOrder.customerEmail || 'N/A'}</p></div>
+                <div><span className="text-gray-500">Estado:</span><p><span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusColor(selectedOrder.status)}`}>{selectedOrder.status}</span></p></div>
+                <div><span className="text-gray-500">Fecha:</span><p className="font-medium">{formatDate(selectedOrder.createdAt)}</p></div>
+                <div><span className="text-gray-500">Moneda:</span><p className="font-medium">{selectedOrder.currency?.toUpperCase()}</p></div>
+                <div><span className="text-gray-500">ID Stripe:</span><p className="font-mono text-xs">{selectedOrder.stripeSessionId || 'N/A'}</p></div>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 

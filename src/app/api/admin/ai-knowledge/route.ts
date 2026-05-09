@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { db } from '@/lib/db';
 
 // GET - List all knowledge entries (with optional filters)
 export async function GET(request: NextRequest) {
@@ -11,7 +9,7 @@ export async function GET(request: NextRequest) {
     const active = searchParams.get('active');
     const search = searchParams.get('search');
 
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     if (category && category !== 'all') {
       where.category = category;
@@ -27,7 +25,7 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    const knowledge = await prisma.aiKnowledge.findMany({
+    const knowledge = await db.aiKnowledge.findMany({
       where,
       orderBy: { createdAt: 'desc' },
     });
@@ -52,7 +50,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const knowledge = await prisma.aiKnowledge.create({
+    const knowledge = await db.aiKnowledge.create({
       data: {
         category,
         question,
