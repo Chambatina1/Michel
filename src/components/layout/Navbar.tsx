@@ -50,7 +50,7 @@ export function Navbar() {
         <Link href="/" className="flex items-center gap-3 group">
           <Image
             src="/images/logo.jpeg"
-            alt="PS Medical Devices"
+            alt="P&S Medical Device Inc."
             width={70}
             height={70}
             className="rounded-xl object-contain transition-transform group-hover:scale-105 shadow-sm"
@@ -58,10 +58,10 @@ export function Navbar() {
           />
           <div className="flex flex-col">
             <span className="text-xl font-bold leading-tight tracking-tight text-primary">
-              PS Medical
+              P&S Medical Device
             </span>
             <span className="hidden text-[10px] font-medium uppercase tracking-widest text-muted-foreground sm:block">
-              Devices
+              Inc.
             </span>
           </div>
         </Link>
@@ -118,12 +118,12 @@ export function Navbar() {
               <SheetTitle className="flex items-center gap-3">
                 <Image
                   src="/images/logo.jpeg"
-                  alt="PS Medical Devices"
+                  alt="P&S Medical Device Inc."
                   width={50}
                   height={50}
                   className="rounded-xl object-contain shadow-sm"
                 />
-                PS Medical Devices
+                P&S Medical Device Inc.
               </SheetTitle>
             </SheetHeader>
 

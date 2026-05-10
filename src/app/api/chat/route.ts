@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
-const SYSTEM_PROMPT = `You are PS Medical Device's AI assistant. You help customers with questions about medical imaging equipment (CT, MRI, X-Ray, Ultrasound), ophthalmology equipment, repair services, selling used equipment, and general inquiries. Be professional, helpful, and knowledgeable. If asked about pricing, suggest requesting a quote through our website. Always mention that we offer expert advisory and after-sales support with every purchase. Respond in the same language the user writes in (if they write in Spanish, respond in Spanish). Keep responses concise (2-4 sentences max unless asked for details).
+const SYSTEM_PROMPT = `You are P&S Medical Device Inc.'s AI assistant. You help customers with questions about medical imaging equipment (CT, MRI, X-Ray, Ultrasound), ophthalmology equipment, repair services, selling used equipment, and general inquiries. Be professional, helpful, and knowledgeable. If asked about pricing, suggest requesting a quote through our website. Always mention that we offer expert advisory and after-sales support with every purchase. Respond in the same language the user writes in (if they write in Spanish, respond in Spanish). Keep responses concise (2-4 sentences max unless asked for details).
 
-Key facts about PS Medical Devices:
+Key facts about P&S Medical Device Inc.:
 - Located at 2234 Winter Woods, Unidad 1000, Winter Park, FL 32792
 - Phone: +1 (305) 244-9340
 - Email: michelgg0102780@gmail.com
@@ -223,8 +223,8 @@ function getKeywordBasedResponse(lower: string): string {
   // Greetings
   if (/^(hi|hello|hey|hola|good morning|good afternoon|good evening|buenos días|buenas tardes|buenas noches|qué tal|que tal)/.test(lower)) {
     return isSpanish
-      ? '¡Hola! Bienvenido a PS Medical Devices. Estamos aquí para ayudarle con equipos de imagenología médica. ¿En qué puedo asistirle? Puede preguntar sobre equipos CT, MRI, Rayos X, Ultrasonido, Oftalmología, cotizaciones, servicios de reparación, o la venta de su equipo usado.'
-      : 'Hello! Welcome to PS Medical Devices. We are here to help you with medical imaging equipment. How can I assist you? Feel free to ask about CT, MRI, X-Ray, Ultrasound, Ophthalmology equipment, quotes, repair services, or selling your used equipment.';
+      ? '¡Hola! Bienvenido a P&S Medical Device Inc. Estamos aquí para ayudarle con equipos de imagenología médica. ¿En qué puedo asistirle? Puede preguntar sobre equipos CT, MRI, Rayos X, Ultrasonido, Oftalmología, cotizaciones, servicios de reparación, o la venta de su equipo usado.'
+      : 'Hello! Welcome to P&S Medical Device Inc. We are here to help you with medical imaging equipment. How can I assist you? Feel free to ask about CT, MRI, X-Ray, Ultrasound, Ophthalmology equipment, quotes, repair services, or selling your used equipment.';
   }
 
   // Pricing
@@ -313,8 +313,8 @@ function getKeywordBasedResponse(lower: string): string {
 
   // Default
   if (isSpanish) {
-    return 'Gracias por su interés en PS Medical Devices. Puedo ayudarle con:\n\n• Escáneres CT y equipos MRI\n• Equipos de Rayos X y Ultrasonido\n• Equipos de Oftalmología\n• Cotizaciones y precios\n• Venta de equipos usados\n• Servicios de reparación y mantenimiento\n\n📞 +1 (305) 244-9340\n📧 michelgg0102780@gmail.com\n\n¿Sobre qué tema le gustaría más información?';
+    return 'Gracias por su interés en P&S Medical Device Inc. Puedo ayudarle con:\n\n• Escáneres CT y equipos MRI\n• Equipos de Rayos X y Ultrasonido\n• Equipos de Oftalmología\n• Cotizaciones y precios\n• Venta de equipos usados\n• Servicios de reparación y mantenimiento\n\n📞 +1 (305) 244-9340\n📧 michelgg0102780@gmail.com\n\n¿Sobre qué tema le gustaría más información?';
   }
 
-  return 'Thank you for your interest in PS Medical Devices. I can help you with:\n\n• CT Scanners and MRI Systems\n• X-Ray and Ultrasound Equipment\n• Ophthalmology Equipment\n• Quotes and Pricing\n• Selling your used equipment\n• Repair and maintenance services\n\n📞 +1 (305) 244-9340\n📧 michelgg0102780@gmail.com\n\nWhat would you like to know more about?';
+  return 'Thank you for your interest in P&S Medical Device Inc. I can help you with:\n\n• CT Scanners and MRI Systems\n• X-Ray and Ultrasound Equipment\n• Ophthalmology Equipment\n• Quotes and Pricing\n• Selling your used equipment\n• Repair and maintenance services\n\n📞 +1 (305) 244-9340\n📧 michelgg0102780@gmail.com\n\nWhat would you like to know more about?';
 }

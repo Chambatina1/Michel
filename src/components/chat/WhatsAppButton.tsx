@@ -6,7 +6,7 @@ import { X, MessageCircle, Phone } from 'lucide-react';
 
 const WHATSAPP_NUMBER = '13052449340';
 const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
-  'Hello PS Medical Devices! I would like more information about your equipment.'
+  'Hello P&S Medical Device Inc.! I would like more information about your equipment.'
 )}`;
 
 export function WhatsAppButton() {
@@ -87,7 +87,7 @@ export function WhatsAppButton() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-white">PS Medical Devices</h3>
+                    <h3 className="text-sm font-semibold text-white">P&S Medical Device Inc.</h3>
                     <p className="flex items-center gap-1.5 text-xs text-white/70">
                       <span className="inline-block h-2 w-2 rounded-full bg-[#25D366]" />
                       Online now
@@ -107,9 +107,9 @@ export function WhatsAppButton() {
                 {/* Chat bubble */}
                 <div className="rounded-2xl rounded-tl-sm bg-[#DCF8C6] px-4 py-3">
                   <p className="text-sm text-gray-800 leading-relaxed">
-                    Hello! Welcome to <strong>PS Medical Devices</strong>. How can we help you today?
+                    Hello! Welcome to <strong>P&S Medical Device Inc.</strong>. How can we help you today?
                   </p>
-                  <p className="mt-1 text-right text-[10px] text-gray-400">PS Medical Devices</p>
+                  <p className="mt-1 text-right text-[10px] text-gray-400">P&S Medical Device Inc.</p>
                 </div>
 
                 {/* Quick action buttons */}

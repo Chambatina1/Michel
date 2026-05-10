@@ -178,7 +178,7 @@ export default function HomePage() {
             <div>
               <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                 Why Healthcare Facilities Choose{" "}
-                <span className="text-accent">PS Medical</span>
+                <span className="text-accent">P&S Medical Device Inc.</span>
               </h2>
               <p className="mt-4 text-base leading-relaxed text-muted-foreground">
                 With over 15 years in the medical equipment industry, we

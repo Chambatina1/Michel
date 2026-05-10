@@ -345,7 +345,7 @@ function LeaveReviewDialog() {
                     <FormControl>
                       <Textarea
                         rows={4}
-                        placeholder="Tell us about your experience with PS Medical Devices..."
+                        placeholder="Tell us about your experience with P&S Medical Device Inc. ..."
                         className="resize-none"
                         {...field}
                       />
@@ -497,7 +497,7 @@ export default function ReviewsPage() {
               <Quote className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold text-foreground mb-1">No Reviews Yet</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Be the first to share your experience with PS Medical Devices.
+                Be the first to share your experience with P&S Medical Device Inc.
               </p>
               <LeaveReviewDialog />
             </div>

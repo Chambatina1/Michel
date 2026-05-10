@@ -44,17 +44,17 @@ export function Footer() {
             <Link href="/" className="inline-flex items-center gap-3 group">
               <Image
                 src="/images/logo.jpeg"
-                alt="PS Medical Devices"
+                alt="P&S Medical Device Inc."
                 width={65}
                 height={65}
                 className="rounded-xl object-contain transition-transform group-hover:scale-105 brightness-0 invert shadow-sm"
               />
               <div className="flex flex-col">
                 <span className="text-xl font-bold leading-tight tracking-tight text-white">
-                  PS Medical
+                  P&S Medical Device
                 </span>
                 <span className="text-[10px] font-medium uppercase tracking-widest text-primary-foreground/60">
-                  Devices
+                  Inc.
                 </span>
               </div>
             </Link>
@@ -125,7 +125,7 @@ export function Footer() {
                 <Phone className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
                 <div>
                   <p className="text-sm text-primary-foreground/70">
-                    (555) 123-4567
+                    +1 (305) 244-9340
                   </p>
                   <p className="text-xs text-primary-foreground/40">
                     Mon-Fri 8am-6pm EST
@@ -141,9 +141,9 @@ export function Footer() {
               <li className="flex items-start gap-3">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
                 <p className="text-sm text-primary-foreground/70">
-                  123 Medical Center Dr,
+                  2234 Winter Woods,
                   <br />
-                  Suite 400, New York, NY 10001
+                  Suite 1000, Winter Park, FL 32792
                 </p>
               </li>
               <li className="flex items-start gap-3">
@@ -167,7 +167,7 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
         <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
           <p className="text-xs text-primary-foreground/50">
-            &copy; {new Date().getFullYear()} PS Medical Devices. All rights
+            &copy; {new Date().getFullYear()} P&S Medical Device Inc. All rights
             reserved.
           </p>
           <div className="flex items-center gap-4">

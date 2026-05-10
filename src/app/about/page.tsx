@@ -42,7 +42,7 @@ export default function AboutPage() {
           >
             Your Trusted Medical Equipment Partner
             <br />
-            <span className="text-teal-300">Since 2005</span>
+            <span className="text-teal-300">Since 2009</span>
           </motion.h1>
           <motion.p
             className="mt-4 text-base text-white/75 sm:text-lg max-w-2xl mx-auto"
@@ -50,7 +50,7 @@ export default function AboutPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            For nearly two decades, PS Medical Devices has been helping healthcare facilities access the medical imaging equipment they need to deliver exceptional patient care.
+            For nearly two decades, P&S Medical Device Inc. has been helping healthcare facilities access the medical imaging equipment they need to deliver exceptional patient care.
           </motion.p>
         </div>
       </section>
@@ -99,9 +99,9 @@ export default function AboutPage() {
             {[
               {
                 icon: Calendar,
-                value: '20+',
+                value: '15+',
                 label: 'Years Experience',
-                description: 'Serving healthcare since 2005',
+                description: 'Serving healthcare since 2009',
               },
               {
                 icon: TrendingUp,
@@ -295,7 +295,7 @@ export default function AboutPage() {
           >
             <h2 className="text-2xl font-bold text-foreground sm:text-3xl mb-3">Our Core Values</h2>
             <p className="text-muted-foreground max-w-xl mx-auto">
-              These principles guide everything we do at PS Medical Devices.
+              These principles guide everything we do at P&S Medical Device Inc.
             </p>
           </motion.div>
 
@@ -348,7 +348,7 @@ export default function AboutPage() {
       {/* CTA */}
       <CTASection
         title="Ready to Work With Us?"
-        description="Join the hundreds of healthcare facilities that trust PS Medical Devices for their equipment needs."
+        description="Join the hundreds of healthcare facilities that trust P&S Medical Device Inc. for their equipment needs."
         buttonText="Get in Touch"
         buttonLink="/contact"
         variant="primary"

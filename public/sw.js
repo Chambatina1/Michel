@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ps-medical-v1';
+const CACHE_NAME = 'ps-medical-v2';
 const OFFLINE_URL = '/';
 
 const PRECACHE_URLS = [

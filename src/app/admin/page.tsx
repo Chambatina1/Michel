@@ -970,7 +970,7 @@ export default function AdminPage() {
               <LayoutDashboard className="h-7 w-7 text-primary-foreground" />
             </div>
             <CardTitle className="text-2xl font-bold text-primary">Admin Panel</CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">PS Medical Devices</p>
+            <p className="text-sm text-muted-foreground mt-1">P&S Medical Device Inc.</p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
@@ -1041,8 +1041,8 @@ export default function AdminPage() {
               <LayoutDashboard className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="text-sm font-bold tracking-tight">PS Medical</h1>
-              <p className="text-[10px] font-medium text-white/50 uppercase tracking-wider">Admin Panel</p>
+              <h1 className="text-sm font-bold tracking-tight">P&S Medical Device</h1>
+              <p className="text-[10px] font-medium text-white/50 uppercase tracking-wider">Inc. Admin Panel</p>
             </div>
           </div>
           <Button

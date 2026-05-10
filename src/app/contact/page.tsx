@@ -85,7 +85,7 @@ export default function ContactPage() {
                   <div>
                     <p className="font-semibold text-foreground">Phone</p>
                     <Button asChild variant="link" className="h-auto p-0 text-teal-600 hover:text-teal-700">
-                      <a href="tel:+18005550199">(800) 555-0199</a>
+                      <a href="tel:+13052449340">+1 (305) 244-9340</a>
                     </Button>
                     <p className="text-xs text-muted-foreground mt-0.5">Mon-Fri 8am-6pm EST</p>
                   </div>
@@ -115,9 +115,9 @@ export default function ContactPage() {
                   <div>
                     <p className="font-semibold text-foreground">Address</p>
                     <p className="text-sm text-muted-foreground">
-                      123 Medical Center Dr,
+                      2234 Winter Woods,
                       <br />
-                      Suite 400, New York, NY 10001
+                      Suite 1000, Winter Park, FL 32792
                     </p>
                   </div>
                 </CardContent>
@@ -142,7 +142,7 @@ export default function ContactPage() {
               {/* Quick Contact Buttons */}
               <div className="grid grid-cols-2 gap-3">
                 <Button asChild variant="outline" className="h-auto py-3">
-                  <a href="tel:+18005550199">
+                  <a href="tel:+13052449340">
                     <Phone className="mr-2 h-4 w-4" />
                     Call Us
                   </a>
@@ -174,7 +174,7 @@ export default function ContactPage() {
                 <MapPin className="h-12 w-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
                 <p className="font-semibold text-slate-400 dark:text-slate-500">Map</p>
                 <p className="text-sm text-slate-400 dark:text-slate-600 mt-1 max-w-sm">
-                  123 Medical Center Dr, Suite 400, New York, NY 10001
+                  2234 Winter Woods, Suite 1000, Winter Park, FL 32792
                 </p>
               </div>
             </div>

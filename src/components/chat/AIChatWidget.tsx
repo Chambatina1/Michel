@@ -159,7 +159,7 @@ export function AIChatWidget() {
                     <Bot className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-white">PS Medical AI Assistant</h3>
+                    <h3 className="text-sm font-semibold text-white">P&S Medical Device AI Assistant</h3>
                     <p className="text-xs text-white/70">Always here to help</p>
                   </div>
                 </div>
@@ -187,7 +187,7 @@ export function AIChatWidget() {
                           Hi there! 👋
                         </p>
                         <p className="mt-1 max-w-[260px] text-xs text-gray-500">
-                          I&apos;m your PS Medical AI assistant. Ask me about our equipment, services, or anything else.
+                          I&apos;m your P&S Medical Device AI assistant. Ask me about our equipment, services, or anything else.
                         </p>
                         <div className="mt-4 flex flex-wrap justify-center gap-2">
                           {[
@@ -332,7 +332,7 @@ export function AIChatWidget() {
                   </Button>
                 </form>
                 <p className="mt-2 text-center text-[10px] text-gray-400">
-                  Powered by PS Medical Devices AI
+                  Powered by P&S Medical Device Inc. AI
                 </p>
               </div>
             </div>
