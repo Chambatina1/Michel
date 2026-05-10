@@ -56,12 +56,9 @@ export function Navbar() {
             className="rounded-xl object-contain transition-transform group-hover:scale-105 shadow-sm"
             priority
           />
-          <div className="flex flex-col">
-            <span className="text-xl font-bold leading-tight tracking-tight text-primary">
-              P&S Medical Device
-            </span>
-            <span className="hidden text-[10px] font-medium uppercase tracking-widest text-muted-foreground sm:block">
-              Inc.
+          <div>
+            <span className="text-lg font-bold leading-tight tracking-tight text-primary">
+              P&S Medical Device Inc.
             </span>
           </div>
         </Link>

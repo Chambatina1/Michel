@@ -49,12 +49,9 @@ export function Footer() {
                 height={65}
                 className="rounded-xl object-contain transition-transform group-hover:scale-105 brightness-0 invert shadow-sm"
               />
-              <div className="flex flex-col">
-                <span className="text-xl font-bold leading-tight tracking-tight text-white">
-                  P&S Medical Device
-                </span>
-                <span className="text-[10px] font-medium uppercase tracking-widest text-primary-foreground/60">
-                  Inc.
+              <div>
+                <span className="text-lg font-bold leading-tight tracking-tight text-white">
+                  P&S Medical Device Inc.
                 </span>
               </div>
             </Link>
