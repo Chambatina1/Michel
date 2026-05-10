@@ -54,41 +54,8 @@ export async function POST(request: NextRequest) {
 
     let assistantMessage: string;
 
-    // 1. Try OpenAI API first (if key is configured) — PRIMARY
-    if (process.env.OPENAI_API_KEY) {
-      try {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages,
-            temperature: 0.7,
-            max_tokens: 500,
-          }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          assistantMessage = data?.choices?.[0]?.message?.content || '';
-          if (assistantMessage) {
-            console.log('OpenAI response successful');
-          }
-        } else {
-          console.error('OpenAI API error:', response.status);
-          assistantMessage = '';
-        }
-      } catch (aiError) {
-        console.error('OpenAI error:', aiError);
-        assistantMessage = '';
-      }
-    }
-
-    // 2. Try DeepSeek API as alternative (if key is configured)
-    if (!assistantMessage && process.env.DEEPSEEK_API_KEY) {
+    // 1. Try DeepSeek API first (PRIMARY AI)
+    if (process.env.DEEPSEEK_API_KEY) {
       try {
         const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
           method: 'POST',
@@ -116,6 +83,39 @@ export async function POST(request: NextRequest) {
         }
       } catch (aiError) {
         console.error('DeepSeek error:', aiError);
+        assistantMessage = '';
+      }
+    }
+
+    // 2. Try OpenAI API as fallback (if key is configured)
+    if (!assistantMessage && process.env.OPENAI_API_KEY) {
+      try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages,
+            temperature: 0.7,
+            max_tokens: 500,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          assistantMessage = data?.choices?.[0]?.message?.content || '';
+          if (assistantMessage) {
+            console.log('OpenAI response successful');
+          }
+        } else {
+          console.error('OpenAI API error:', response.status);
+          assistantMessage = '';
+        }
+      } catch (aiError) {
+        console.error('OpenAI error:', aiError);
         assistantMessage = '';
       }
     }
