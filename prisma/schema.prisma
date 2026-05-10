@@ -144,6 +144,25 @@ model BlogPost {
   updatedAt   DateTime @updatedAt
 }
 
+model Service {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String   // full description (markdown)
+  shortDesc   String   // short description for cards
+  icon        String   @default("Wrench") // lucide icon name
+  coverImage  String   @default("") // main image URL
+  images      String   @default("[]") // JSON array of additional image URLs
+  features    String   @default("[]") // JSON array of feature strings
+  ctaText     String   @default("Learn More") // button text
+  ctaLink     String   @default("/contact") // button link
+  sortOrder   Int      @default(0) // display order
+  isPublished Boolean  @default(true)
+  isFeatured  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model AiKnowledge {
   id        String   @id @default(cuid())
   category  String   // product_info, pricing, services, faq, policies, general

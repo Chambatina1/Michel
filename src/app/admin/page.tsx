@@ -56,6 +56,7 @@ import {
   Send,
   ToggleLeft,
   ToggleRight,
+  Wrench,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -226,6 +227,7 @@ const navItems = [
   { id: 'leads', label: 'Leads', icon: FileText },
   { id: 'sell-requests', label: 'Ventas', icon: ShoppingBag },
   { id: 'reviews', label: 'Resenas', icon: Star },
+  { id: 'services', label: 'Servicios', icon: Wrench },
   { id: 'users', label: 'Usuarios', icon: Users },
   { id: 'blog', label: 'Blog', icon: Newspaper },
   { id: 'ai-training', label: 'IA Entrenamiento', icon: Brain },
@@ -313,6 +315,16 @@ export default function AdminPage() {
     isPublished: false, isFeatured: false, readTime: 5,
   });
   const [blogCategoryFilter, setBlogCategoryFilter] = useState('all');
+
+  // Services state
+  const [services, setServices] = useState<any[]>([]);
+  const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
+  const [editingService, setEditingService] = useState<any>(null);
+  const [serviceForm, setServiceForm] = useState({
+    title: '', slug: '', shortDesc: '', description: '', icon: 'Wrench',
+    coverImage: '', features: '', ctaText: 'Learn More', ctaLink: '/contact',
+    sortOrder: 0, isPublished: true, isFeatured: false,
+  });
 
   // Payment Gateways state
   const [paymentConfigs, setPaymentConfigs] = useState<Record<string, PaymentConfigData>>({});
@@ -494,6 +506,14 @@ export default function AdminPage() {
     } catch { toast.error('Error al cargar posts del blog'); }
   }, [blogCategoryFilter]);
 
+  const fetchServices = useCallback(async () => {
+    try {
+      const res = await fetch('/api/services?limit=100');
+      const data = await res.json();
+      if (res.ok) setServices(data.services || []);
+    } catch { toast.error('Error al cargar servicios'); }
+  }, []);
+
   const savePaymentConfig = async (gateway: string, config: Record<string, string | boolean>, isActive: boolean) => {
     setSavingPaymentConfig(true);
     try {
@@ -529,7 +549,8 @@ export default function AdminPage() {
     if (activeTab === 'ai-training') fetchAiKnowledge();
     if (activeTab === 'orders') fetchOrders();
     if (activeTab === 'blog') fetchBlogPosts();
-  }, [isAuthenticated, fetchDashboardData, fetchUsers, fetchSettings, fetchPaymentConfigs, activeTab, fetchAiKnowledge, fetchOrders, fetchBlogPosts]);
+    if (activeTab === 'services') fetchServices();
+  }, [isAuthenticated, fetchDashboardData, fetchUsers, fetchSettings, fetchPaymentConfigs, activeTab, fetchAiKnowledge, fetchOrders, fetchBlogPosts, fetchServices]);
 
   /* ─── AI Knowledge actions ─── */
   const openKnowledgeDialog = (entry?: AiKnowledge) => {
@@ -782,6 +803,8 @@ export default function AdminPage() {
         res = await fetch(`/api/admin/users/${deleteTarget.id}`, { method: 'DELETE' });
       } else if (deleteTarget.type === 'blog-post') {
         res = await fetch(`/api/admin/blog/${deleteTarget.id}`, { method: 'DELETE' });
+      } else if (deleteTarget.type === 'service') {
+        res = await fetch(`/api/services/${deleteTarget.id}`, { method: 'DELETE' });
       }
 
       if (res && res.ok) {
@@ -789,6 +812,7 @@ export default function AdminPage() {
         fetchDashboardData();
         fetchUsers();
         fetchBlogPosts();
+        fetchServices();
       } else {
         toast.error('Failed to delete');
       }
@@ -1022,6 +1046,125 @@ export default function AdminPage() {
     } catch {
       toast.error('Update failed');
     }
+  };
+
+  /* ─── Service actions ─── */
+  const openServiceDialog = (service?: any) => {
+    if (service) {
+      setEditingService(service);
+      setServiceForm({
+        title: service.title,
+        slug: service.slug,
+        shortDesc: service.shortDesc || '',
+        description: service.description || '',
+        icon: service.icon || 'Wrench',
+        coverImage: service.coverImage || '',
+        features: Array.isArray(service.features) ? service.features.join('\n') : (typeof service.features === 'string' ? JSON.parse(service.features || '[]').join('\n') : ''),
+        ctaText: service.ctaText || 'Learn More',
+        ctaLink: service.ctaLink || '/contact',
+        sortOrder: service.sortOrder || 0,
+        isPublished: service.isPublished !== false,
+        isFeatured: service.isFeatured || false,
+      });
+    } else {
+      setEditingService(null);
+      setServiceForm({
+        title: '', slug: '', shortDesc: '', description: '', icon: 'Wrench',
+        coverImage: '', features: '', ctaText: 'Learn More', ctaLink: '/contact',
+        sortOrder: 0, isPublished: true, isFeatured: false,
+      });
+    }
+    setServiceDialogOpen(true);
+  };
+
+  const handleServiceTitleChange = (title: string) => {
+    setServiceForm(prev => ({
+      ...prev,
+      title,
+      slug: editingService ? prev.slug : title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim(),
+    }));
+  };
+
+  const handleServiceImageUpload = async (file: File) => {
+    if (!file.type.startsWith('image/')) { toast.error('Selecciona una imagen (JPEG, PNG, WebP)'); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.error('Imagen max 10MB'); return; }
+    setImageUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        setServiceForm(prev => ({ ...prev, coverImage: data.url }));
+        setImagePreview(data.url);
+        toast.success('Imagen subida!');
+      } else { toast.error(data.error || 'Error al subir'); }
+    } catch { toast.error('Error al subir imagen'); }
+    finally { setImageUploading(false); }
+  };
+
+  const handleServiceSubmit = async () => {
+    try {
+      const payload = {
+        ...serviceForm,
+        features: serviceForm.features.split('\n').filter(f => f.trim()),
+        sortOrder: parseInt(String(serviceForm.sortOrder)) || 0,
+      };
+      let res;
+      if (editingService) {
+        res = await fetch(`/api/services/${editingService.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        res = await fetch('/api/services', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      }
+      if (res.ok) {
+        toast.success(editingService ? 'Servicio actualizado' : 'Servicio creado');
+        setServiceDialogOpen(false);
+        fetchServices();
+      } else {
+        const d = await res.json();
+        toast.error(d.error || 'Error al guardar');
+      }
+    } catch { toast.error('Error al guardar servicio'); }
+  };
+
+  const deleteService = async (id: string) => {
+    try {
+      const res = await fetch(`/api/services/${id}`, { method: 'DELETE' });
+      if (res.ok) { toast.success('Servicio eliminado'); fetchServices(); }
+      else toast.error('Error al eliminar');
+    } catch { toast.error('Error al eliminar'); }
+  };
+
+  const toggleServicePublish = async (service: any) => {
+    try {
+      const res = await fetch(`/api/services/${service.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...service, isPublished: !service.isPublished }),
+      });
+      if (res.ok) { toast.success(service.isPublished ? 'Servicio despublicado' : 'Servicio publicado'); fetchServices(); }
+      else toast.error('Error al actualizar');
+    } catch { toast.error('Error al actualizar'); }
+  };
+
+  const toggleServiceFeatured = async (service: any) => {
+    try {
+      const res = await fetch(`/api/services/${service.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...service, isFeatured: !service.isFeatured }),
+      });
+      if (res.ok) { toast.success('Estado destacado actualizado'); fetchServices(); }
+      else toast.error('Error al actualizar');
+    } catch { toast.error('Error al actualizar'); }
   };
 
   /* ─── Settings ─── */
@@ -2325,6 +2468,264 @@ export default function AdminPage() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── SERVICES TAB ─── */}
+      {activeTab === 'services' && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Servicios</h3>
+              <p className="text-sm text-gray-500">{services.length} servicios totales</p>
+            </div>
+            <Button onClick={() => openServiceDialog()} className="gap-2 bg-teal-600 hover:bg-teal-700">
+              <Plus className="h-4 w-4" /> Nuevo Servicio
+            </Button>
+          </div>
+
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-50/80">
+                      <TableHead className="pl-4">Imagen</TableHead>
+                      <TableHead>Titulo</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Orden</TableHead>
+                      <TableHead>Destacado</TableHead>
+                      <TableHead className="pr-4">Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {services.sort((a: any, b: any) => (a.sortOrder || 0) - (b.sortOrder || 0)).map((service: any) => (
+                      <TableRow key={service.id}>
+                        <TableCell className="pl-4">
+                          <div className="h-12 w-16 rounded-lg overflow-hidden bg-gray-100">
+                            {service.coverImage ? (
+                              <img src={service.coverImage} alt={service.title} className="h-full w-full object-cover" />
+                            ) : (
+                              <div className="h-full w-full flex items-center justify-center"><Wrench className="h-4 w-4 text-gray-300" /></div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium text-gray-900">{service.title}</p>
+                            <p className="text-xs text-gray-400">{service.shortDesc?.substring(0, 60)}...</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <button
+                            onClick={() => toggleServicePublish(service)}
+                            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium cursor-pointer transition-colors ${
+                              service.isPublished
+                                ? 'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200'
+                                : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'
+                            }`}
+                          >
+                            {service.isPublished ? <Check className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+                            {service.isPublished ? 'Publicado' : 'Borrador'}
+                          </button>
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-500">{service.sortOrder || 0}</TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="icon" className={`h-8 w-8 ${service.isFeatured ? 'text-amber-400' : 'text-gray-300'}`} onClick={() => toggleServiceFeatured(service)}>
+                            <Star className={`h-4 w-4 ${service.isFeatured ? 'fill-amber-400' : ''}`} />
+                          </Button>
+                        </TableCell>
+                        <TableCell className="pr-4">
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600" onClick={() => openServiceDialog(service)} title="Editar">
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <a href="/services" target="_blank" rel="noopener noreferrer">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500" title="Ver">
+                                <Eye className="h-3.5 w-3.5" />
+                              </Button>
+                            </a>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => confirmDelete('service', service.id, service.title)} title="Eliminar">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {services.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="py-12 text-center text-gray-400">
+                          <Wrench className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                          No hay servicios. Crea tu primer servicio!
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Service Dialog */}
+      <Dialog open={serviceDialogOpen} onOpenChange={setServiceDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingService ? 'Editar Servicio' : 'Nuevo Servicio'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {/* Image Upload */}
+            <div>
+              <Label>Imagen del Servicio</Label>
+              <div
+                className="mt-1 border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors hover:border-teal-400 hover:bg-teal-50/50"
+                onClick={() => document.getElementById('service-image-input')?.click()}
+              >
+                {serviceForm.coverImage ? (
+                  <div className="relative">
+                    <img src={serviceForm.coverImage} alt="Preview" className="max-h-48 mx-auto rounded-lg object-cover" />
+                    <p className="text-xs text-gray-400 mt-2">Click para cambiar imagen</p>
+                  </div>
+                ) : (
+                  <div className="py-4">
+                    <Upload className="h-8 w-8 mx-auto text-gray-300 mb-2" />
+                    <p className="text-sm text-gray-500">Click para subir una imagen</p>
+                    <p className="text-xs text-gray-400">JPEG, PNG o WebP - Max 10MB</p>
+                  </div>
+                )}
+                <input
+                  id="service-image-input"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleServiceImageUpload(file);
+                  }}
+                />
+              </div>
+              {imageUploading && (
+                <div className="flex items-center gap-2 text-sm text-teal-600 mt-1">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Subiendo imagen...
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <Label>Titulo del Servicio *</Label>
+                <Input
+                  placeholder="Ej: Reparacion y Mantenimiento"
+                  value={serviceForm.title}
+                  onChange={(e) => handleServiceTitleChange(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label>URL Slug *</Label>
+                <Input
+                  placeholder="ej: reparacion-mantenimiento"
+                  value={serviceForm.slug}
+                  onChange={(e) => setServiceForm({ ...serviceForm, slug: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Icono</Label>
+                <Select value={serviceForm.icon} onValueChange={(v) => setServiceForm({ ...serviceForm, icon: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Wrench">Wrench (Reparacion)</SelectItem>
+                    <SelectItem value="Headphones">Headphones (Soporte)</SelectItem>
+                    <SelectItem value="MessageSquare">MessageSquare (Consultoria)</SelectItem>
+                    <SelectItem value="Shield">Shield (Proteccion)</SelectItem>
+                    <SelectItem value="HeartPulse">HeartPulse (Salud)</SelectItem>
+                    <SelectItem value="Monitor">Monitor (Diagnostico)</SelectItem>
+                    <SelectItem value="Settings">Settings (Configuracion)</SelectItem>
+                    <SelectItem value="Stethoscope">Stethoscope (Medico)</SelectItem>
+                    <SelectItem value="Truck">Truck (Entrega)</SelectItem>
+                    <SelectItem value="GraduationCap">GraduationCap (Capacitacion)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="sm:col-span-2">
+                <Label>Descripcion Corta *</Label>
+                <Textarea
+                  placeholder="Breve descripcion del servicio..."
+                  rows={2}
+                  value={serviceForm.shortDesc}
+                  onChange={(e) => setServiceForm({ ...serviceForm, shortDesc: e.target.value })}
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <Label>Descripcion Completa (Markdown)</Label>
+                <Textarea
+                  placeholder="Descripcion detallada del servicio en Markdown..."
+                  rows={8}
+                  className="font-mono text-sm"
+                  value={serviceForm.description}
+                  onChange={(e) => setServiceForm({ ...serviceForm, description: e.target.value })}
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <Label>Caracteristicas (una por linea)</Label>
+                <Textarea
+                  placeholder={"Reparacion de emergencia\nMantenimiento preventivo\nCalibracion y certificacion\nSoporte 24/7"}
+                  rows={4}
+                  value={serviceForm.features}
+                  onChange={(e) => setServiceForm({ ...serviceForm, features: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Texto del Boton</Label>
+                <Input
+                  placeholder="Ej: Solicitar Servicio"
+                  value={serviceForm.ctaText}
+                  onChange={(e) => setServiceForm({ ...serviceForm, ctaText: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Link del Boton</Label>
+                <Input
+                  placeholder="Ej: /contact?type=support"
+                  value={serviceForm.ctaLink}
+                  onChange={(e) => setServiceForm({ ...serviceForm, ctaLink: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Orden de Aparicion</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={serviceForm.sortOrder}
+                  onChange={(e) => setServiceForm({ ...serviceForm, sortOrder: parseInt(e.target.value) || 0 })}
+                />
+              </div>
+              <div className="flex items-end gap-4 pb-1">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={serviceForm.isPublished}
+                    onCheckedChange={(v) => setServiceForm({ ...serviceForm, isPublished: v })}
+                  />
+                  <Label className="cursor-pointer">Publicado</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={serviceForm.isFeatured}
+                    onCheckedChange={(v) => setServiceForm({ ...serviceForm, isFeatured: v })}
+                  />
+                  <Label className="cursor-pointer">Destacado</Label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setServiceDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={handleServiceSubmit} className="bg-teal-600 hover:bg-teal-700" disabled={!serviceForm.title || !serviceForm.slug}>
+              <Save className="h-4 w-4 mr-1" />
+              {editingService ? 'Actualizar' : 'Crear Servicio'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

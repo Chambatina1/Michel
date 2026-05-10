@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
@@ -9,6 +10,29 @@ import {
   MessageSquare,
   ArrowRight,
   CheckCircle2,
+  Clock,
+  MapPin,
+  Users,
+  Settings,
+  BookOpen,
+  Shield,
+  Monitor,
+  Stethoscope,
+  HeartPulse,
+  Star,
+  Zap,
+  Truck,
+  type LucideIcon,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { CTASection } from '@/components/layout/CTASection';
+
+/* ── Icon mapper: convert string name → lucide component ── */
+const iconMap: Record<string, LucideIcon> = {
+  Wrench,
+  Headphones,
+  MessageSquare,
   Shield,
   Monitor,
   Stethoscope,
@@ -18,18 +42,60 @@ import {
   Users,
   Settings,
   BookOpen,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { CTASection } from '@/components/layout/CTASection';
+  Star,
+  Zap,
+  Truck,
+  CheckCircle2,
+  ArrowRight,
+};
 
+function getIcon(name: string): LucideIcon {
+  return iconMap[name] || Wrench;
+}
+
+/* ── Animation variants ── */
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0 },
 };
 
+/* ── Types ── */
+interface ServiceData {
+  id: string;
+  title: string;
+  slug: string;
+  shortDesc: string;
+  icon: string;
+  coverImage: string;
+  features: string[];
+  ctaText: string;
+  ctaLink: string;
+  isFeatured: boolean;
+}
+
+/* ═══════════════════════════════════════════════════════ */
+
 export default function ServicesPage() {
+  const [services, setServices] = useState<ServiceData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchServices() {
+      try {
+        const res = await fetch('/api/services?published=true');
+        if (res.ok) {
+          const data = await res.json();
+          setServices(data.services || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch services:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchServices();
+  }, []);
+
   return (
     <>
       {/* Hero */}
@@ -59,227 +125,146 @@ export default function ServicesPage() {
       {/* Service Sections */}
       <section className="py-14 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-12">
-          {/* Service 1: Repair & Maintenance */}
-          <motion.div
-            variants={fadeInUp}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            transition={{ duration: 0.4 }}
-          >
-            <Card className="overflow-hidden">
-              <CardContent className="p-0">
-                <div className="grid grid-cols-1 lg:grid-cols-5">
-                  <div className="lg:col-span-2 relative overflow-hidden min-h-[280px] sm:min-h-[340px]">
-                    <Image
-                      src="/images/services/repair-maintenance.jpg"
-                      alt="Medical equipment repair and maintenance by certified biomedical engineers"
-                      fill
-                      className="object-cover"
-                      priority
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-500">
-                          <Wrench className="h-5 w-5 text-white" />
-                        </div>
-                      </div>
-                      <h2 className="text-xl sm:text-2xl font-bold text-white leading-tight">Equipment Repair & Maintenance</h2>
+          {loading ? (
+            /* Loading skeleton */
+            Array.from({ length: 3 }).map((_, i) => (
+              <Card key={i} className="overflow-hidden animate-pulse">
+                <CardContent className="p-0">
+                  <div className="grid grid-cols-1 lg:grid-cols-5">
+                    <div className="lg:col-span-2 bg-muted min-h-[340px]" />
+                    <div className="lg:col-span-3 p-6 sm:p-10 space-y-4">
+                      <div className="h-4 bg-muted rounded w-3/4" />
+                      <div className="h-4 bg-muted rounded w-1/2" />
+                      <div className="h-4 bg-muted rounded w-5/6" />
+                      <div className="h-10 bg-muted rounded w-40" />
                     </div>
                   </div>
-                  <div className="lg:col-span-3 p-6 sm:p-10">
-                    <p className="text-muted-foreground leading-relaxed mb-6">
-                      Our team of certified biomedical engineers provides expert repair and preventive maintenance services for all types of medical imaging equipment. We minimize downtime and keep your systems running at peak performance.
-                    </p>
-                    <div className="mb-6">
-                      <h3 className="font-semibold text-foreground mb-3">Supported Equipment Types</h3>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        {[
-                          { icon: Monitor, label: 'CT Scanners' },
-                          { icon: HeartPulse, label: 'MRI Systems' },
-                          { icon: Shield, label: 'X-Ray Systems' },
-                          { icon: Stethoscope, label: 'Ultrasound' },
-                          { icon: Settings, label: 'Ophthalmology' },
-                          { icon: Wrench, label: 'Parts & Accessories' },
-                        ].map((item) => (
-                          <div key={item.label} className="flex items-center gap-2">
-                            <item.icon className="h-4 w-4 text-teal-600" />
-                            <span className="text-sm text-foreground">{item.label}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <ul className="space-y-2 mb-6">
-                      {[
-                        'Emergency repair with 4-hour response time',
-                        'Preventive maintenance programs',
-                        'Full system calibration and testing',
-                        'OEM-quality replacement parts',
-                        'Service contracts available',
-                      ].map((item) => (
-                        <li key={item} className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <CheckCircle2 className="h-4 w-4 text-teal-600 shrink-0" />
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                    <Button asChild className="bg-teal-600 hover:bg-teal-700 text-white">
-                      <Link href="/contact?type=support">
-                        Request Service
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+                </CardContent>
+              </Card>
+            ))
+          ) : services.length === 0 ? (
+            /* Empty state */
+            <motion.div
+              variants={fadeInUp}
+              initial="hidden"
+              animate="visible"
+              transition={{ duration: 0.5 }}
+              className="text-center py-20"
+            >
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-teal-50 dark:bg-teal-950/30 mx-auto mb-4">
+                <Settings className="h-8 w-8 text-teal-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-foreground mb-2">No Services Available</h2>
+              <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                We&apos;re currently updating our service offerings. Please check back soon or contact us directly for assistance.
+              </p>
+              <Button asChild className="bg-teal-600 hover:bg-teal-700 text-white">
+                <Link href="/contact">
+                  Contact Us
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </motion.div>
+          ) : (
+            /* Service cards with alternating layout */
+            services.map((service, index) => {
+              const IconComponent = getIcon(service.icon);
+              const isReversed = index % 2 !== 0; // Alternating layout
 
-          {/* Service 2: Technical Support & Training */}
-          <motion.div
-            variants={fadeInUp}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            transition={{ duration: 0.4 }}
-          >
-            <Card className="overflow-hidden">
-              <CardContent className="p-0">
-                <div className="grid grid-cols-1 lg:grid-cols-5">
-                  <div className="lg:col-span-2 relative overflow-hidden min-h-[280px] sm:min-h-[340px] order-2 lg:order-1">
-                    <Image
-                      src="/images/services/technical-support.jpg"
-                      alt="Medical equipment technical support and staff training programs"
-                      fill
-                      className="object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-500">
-                          <Headphones className="h-5 w-5 text-white" />
-                        </div>
-                      </div>
-                      <h2 className="text-xl sm:text-2xl font-bold text-white leading-tight">Technical Support & Training</h2>
-                    </div>
-                  </div>
-                  <div className="lg:col-span-3 p-6 sm:p-10 order-1 lg:order-2">
-                    <p className="text-muted-foreground leading-relaxed mb-6">
-                      Our dedicated support team is available around the clock to assist with technical issues, software updates, and system optimization. We also offer comprehensive training programs to ensure your staff can operate equipment confidently and efficiently.
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
-                      <div>
-                        <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-teal-600" />
-                          24/7 Support
-                        </h3>
-                        <ul className="space-y-2">
-                          {[
-                            'Phone and remote support',
-                            'Real-time diagnostics',
-                            'Software troubleshooting',
-                            'Emergency escalations',
-                          ].map((item) => (
-                            <li key={item} className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <CheckCircle2 className="h-4 w-4 text-teal-600 shrink-0" />
-                              {item}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                          <BookOpen className="h-4 w-4 text-teal-600" />
-                          Training Programs
-                        </h3>
-                        <ul className="space-y-2">
-                          {[
-                            'On-site operator training',
-                            'Advanced clinical applications',
-                            'Safety and compliance',
-                            'Certification programs',
-                          ].map((item) => (
-                            <li key={item} className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <CheckCircle2 className="h-4 w-4 text-teal-600 shrink-0" />
-                              {item}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                    <Button asChild variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
-                      <Link href="/contact?type=support">
-                        <Headphones className="mr-2 h-4 w-4" />
-                        Contact Support
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Service 3: Consultative Sales Advisory */}
-          <motion.div
-            variants={fadeInUp}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            transition={{ duration: 0.4 }}
-          >
-            <Card className="overflow-hidden">
-              <CardContent className="p-0">
-                <div className="grid grid-cols-1 lg:grid-cols-5">
-                  <div className="lg:col-span-2 relative overflow-hidden min-h-[280px] sm:min-h-[340px]">
-                    <Image
-                      src="/images/services/sales-advisory.jpg"
-                      alt="Professional medical equipment sales consultation and advisory services"
-                      fill
-                      className="object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-500">
-                          <MessageSquare className="h-5 w-5 text-white" />
-                        </div>
-                      </div>
-                      <h2 className="text-xl sm:text-2xl font-bold text-white leading-tight">Consultative Sales Advisory</h2>
-                    </div>
-                  </div>
-                  <div className="lg:col-span-3 p-6 sm:p-10">
-                    <p className="text-muted-foreground leading-relaxed mb-6">
-                      Choosing the right medical equipment is a significant investment. Our expert advisors work alongside your team to understand your clinical needs, budget constraints, and growth plans to recommend the best solution for your facility.
-                    </p>
-                    <h3 className="font-semibold text-foreground mb-3">How We Help</h3>
-                    <div className="space-y-3 mb-6">
-                      {[
-                        { title: 'Needs Assessment', desc: 'Comprehensive evaluation of your imaging requirements, patient volume, and clinical applications.' },
-                        { title: 'Budget Planning', desc: 'Transparent pricing with options for new, refurbished, or refurbished-to-new upgrade paths.' },
-                        { title: 'Facility Planning', desc: 'Site evaluation, room requirements, electrical specifications, and installation coordination.' },
-                        { title: 'Comparison Analysis', desc: 'Side-by-side comparison of equipment from different manufacturers to find the best fit.' },
-                      ].map((item) => (
-                        <div key={item.title} className="flex items-start gap-3">
-                          <CheckCircle2 className="h-5 w-5 text-teal-600 shrink-0 mt-0.5" />
-                          <div>
-                            <p className="text-sm font-medium text-foreground">{item.title}</p>
-                            <p className="text-sm text-muted-foreground">{item.desc}</p>
+              return (
+                <motion.div
+                  key={service.id}
+                  variants={fadeInUp}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4 }}
+                >
+                  <Card className="overflow-hidden">
+                    <CardContent className="p-0">
+                      <div className="grid grid-cols-1 lg:grid-cols-5">
+                        {/* Image section */}
+                        <div
+                          className={`lg:col-span-2 relative overflow-hidden min-h-[280px] sm:min-h-[340px] ${
+                            isReversed ? 'order-2 lg:order-1' : ''
+                          }`}
+                        >
+                          {service.coverImage ? (
+                            <Image
+                              src={service.coverImage}
+                              alt={service.title}
+                              fill
+                              className="object-cover"
+                              priority={index < 2}
+                            />
+                          ) : (
+                            <div className="absolute inset-0 bg-gradient-to-br from-teal-600 to-teal-800 flex items-center justify-center">
+                              <IconComponent className="h-20 w-20 text-white/30" />
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                          <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-500">
+                                <IconComponent className="h-5 w-5 text-white" />
+                              </div>
+                            </div>
+                            <h2 className="text-xl sm:text-2xl font-bold text-white leading-tight">
+                              {service.title}
+                            </h2>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                    <Button asChild className="bg-teal-600 hover:bg-teal-700 text-white">
-                      <Link href="/contact?type=quote">
-                        Schedule Consultation
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+
+                        {/* Content section */}
+                        <div className={`lg:col-span-3 p-6 sm:p-10 ${isReversed ? 'order-1 lg:order-2' : ''}`}>
+                          <p className="text-muted-foreground leading-relaxed mb-6">
+                            {service.shortDesc}
+                          </p>
+
+                          {/* Features list */}
+                          {service.features && service.features.length > 0 && (
+                            <ul className="space-y-2 mb-6">
+                              {service.features.map((feature) => (
+                                <li key={feature} className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  <CheckCircle2 className="h-4 w-4 text-teal-600 shrink-0" />
+                                  {feature}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+
+                          {/* CTA Button */}
+                          <Button
+                            asChild
+                            className={
+                              isReversed
+                                ? 'border-primary text-primary hover:bg-primary hover:text-primary-foreground'
+                                : 'bg-teal-600 hover:bg-teal-700 text-white'
+                            }
+                            variant={isReversed ? 'outline' : 'default'}
+                          >
+                            <Link href={service.ctaLink || '/contact'}>
+                              {isReversed ? (
+                                <>
+                                  <IconComponent className="mr-2 h-4 w-4" />
+                                  {service.ctaText || 'Learn More'}
+                                </>
+                              ) : (
+                                <>
+                                  {service.ctaText || 'Learn More'}
+                                  <ArrowRight className="ml-2 h-4 w-4" />
+                                </>
+                              )}
+                            </Link>
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })
+          )}
         </div>
       </section>
 
@@ -352,7 +337,7 @@ export default function ServicesPage() {
         </div>
       </section>
 
-      {/* Service Area */}
+      {/* Service Area Coverage */}
       <section className="py-14 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div
