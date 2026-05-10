@@ -1,19 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
-const SYSTEM_PROMPT = `You are P&S Medical Device Inc.'s AI assistant. You help customers with questions about medical imaging equipment (CT, MRI, X-Ray, Ultrasound), ophthalmology equipment, repair services, selling used equipment, and general inquiries. Be professional, helpful, and knowledgeable. If asked about pricing, suggest requesting a quote through our website. Always mention that we offer expert advisory and after-sales support with every purchase. Respond in the same language the user writes in (if they write in Spanish, respond in Spanish). Keep responses concise (2-4 sentences max unless asked for details).
+// DeepSeek API Key - fallback hardcoded in case env var is not set
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || 'sk-7bb9cff20c1349a2b6c561b96da0b1c9';
 
-Key facts about P&S Medical Device Inc.:
-- Located at 2234 Winter Woods, Unidad 1000, Winter Park, FL 32792
+const SYSTEM_PROMPT = `You are the AI assistant for P&S Medical Device Inc., a company specializing in medical imaging and ophthalmology equipment. You are warm, professional, and knowledgeable. Your goal is to help customers find the right equipment, answer questions about products and services, and guide them to make informed decisions.
+
+CRITICAL RULES:
+1. ALWAYS respond in the SAME LANGUAGE the user writes in. If they write in Spanish, respond in Spanish. If in English, respond in English.
+2. Be conversational and natural - do NOT sound robotic or use generic template responses.
+3. Give specific, helpful answers based on the product knowledge provided.
+4. When discussing pricing, explain that prices vary based on specifications, condition, and configuration, and guide them to request a personalized quote.
+5. Always offer next steps (call, email, visit website, request quote) at appropriate moments.
+6. Keep responses concise (3-5 sentences) unless the user asks for detailed information.
+7. Never make up specifications, prices, or availability - only use the information provided.
+
+COMPANY INFORMATION:
+- Name: P&S Medical Device Inc.
+- Address: 2234 Winter Woods, Unidad 1000, Winter Park, FL 32792
 - Phone: +1 (305) 244-9340
 - Email: michelgg0102780@gmail.com
 - Hours: Monday - Friday, 8:00 AM - 6:00 PM CST
-- We sell both new and refurbished medical imaging equipment
-- Categories: CT Scanner, MRI, X-Ray, Ultrasound, Ophthalmology
-- All refurbished equipment comes with warranty and installation support
-- We also buy used medical equipment from facilities looking to upgrade
-- Over 15 years of experience serving hospitals, imaging centers, and clinics
-- Website: https://ps-medical-devices.onrender.com`;
+- Website: https://ps-medical-devices.onrender.com
+- Experience: Over 15 years serving hospitals, imaging centers, and clinics
+
+PRODUCT CATEGORIES:
+1. CT Scanners - GE Revolution (256-slice), Toshiba Aquilion ONE (320-row), Siemens SOMATOM series
+2. MRI Systems - Siemens Magnetom Vida 3T, Hitachi Echelon Oval 1.5T, GE Signa series
+3. X-Ray Equipment - Carestream DRX-Evolution (digital), GE Optima XR646, Shimadzu Sonialvision (R/F)
+4. Ultrasound Systems - Philips IU Elite, Canon Aplio i800, GE LOGIQ E10
+5. Ophthalmology Equipment - Zeiss Cirrus HD-OCT 6000, Topcon Maestro 2 OCT, Heidelberg Spectralis OCT
+
+SERVICES:
+- Sale of new and refurbished medical imaging equipment
+- Equipment trade-in and purchase of used equipment
+- Repair and maintenance services (preventive, emergency, calibration, software upgrades)
+- Professional installation and staff training
+- After-sales support and warranty
+- Financing options available
+
+BRANDS WE WORK WITH:
+GE Healthcare, Siemens Healthineers, Philips, Canon Medical, Toshiba, Hitachi, Zeiss, Topcon, Carestream, Shimadzu
+
+REFURBISHED EQUIPMENT:
+All refurbished equipment undergoes rigorous inspection and certification. Includes warranty, professional installation, staff training, and post-sale technical support.`;
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,7 +57,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Load active knowledge entries from database
+    // Load knowledge entries from database for additional context
     let knowledgeContext = '';
     try {
       const knowledgeEntries = await db.aiKnowledge.findMany({
@@ -37,92 +67,81 @@ export async function POST(request: NextRequest) {
       });
 
       if (knowledgeEntries.length > 0) {
-        knowledgeContext = '\n\nAdditional company knowledge (use this to answer accurately):\n';
+        knowledgeContext = '\n\nADDITIONAL KNOWLEDGE BASE (use this to answer customer questions accurately):\n';
         for (const entry of knowledgeEntries) {
-          knowledgeContext += `Q: ${entry.question}\nA: ${entry.answer}\n`;
+          knowledgeContext += `- Q: ${entry.question} -> A: ${entry.answer}\n`;
         }
       }
     } catch (dbError) {
       console.error('Could not load knowledge base:', dbError);
     }
 
-    const fullSystemPrompt = SYSTEM_PROMPT + (knowledgeContext || '');
-    const messages = [
-      { role: 'system' as const, content: fullSystemPrompt },
-      { role: 'user' as const, content: message },
+    const fullSystemPrompt = SYSTEM_PROMPT + knowledgeContext;
+
+    // Load recent conversation history for multi-turn context (last 10 messages)
+    const conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+    try {
+      const recentMessages = await db.chatMessage.findMany({
+        where: { sessionId },
+        orderBy: { createdAt: 'asc' },
+        take: 10,
+      });
+      for (const msg of recentMessages) {
+        conversationHistory.push({
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content,
+        });
+      }
+    } catch (historyError) {
+      console.error('Could not load conversation history:', historyError);
+    }
+
+    // Build messages array with system prompt, history, and new message
+    const messages: Array<{ role: string; content: string }> = [
+      { role: 'system', content: fullSystemPrompt },
+      ...conversationHistory,
+      { role: 'user', content: message },
     ];
 
-    let assistantMessage: string;
+    let assistantMessage: string = '';
 
-    // 1. Try DeepSeek API first (PRIMARY AI)
-    if (process.env.DEEPSEEK_API_KEY) {
-      try {
-        const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
-          },
-          body: JSON.stringify({
-            model: 'deepseek-chat',
-            messages,
-            temperature: 0.7,
-            max_tokens: 500,
-          }),
-        });
+    // ═══ PRIMARY: DeepSeek AI ═══
+    try {
+      console.log('Calling DeepSeek API...');
+      const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages,
+          temperature: 0.7,
+          max_tokens: 800,
+          presence_penalty: 0.6,
+          frequency_penalty: 0.3,
+        }),
+      });
 
-        if (response.ok) {
-          const data = await response.json();
-          assistantMessage = data?.choices?.[0]?.message?.content || '';
-          if (assistantMessage) {
-            console.log('DeepSeek response successful');
-          }
-        } else {
-          console.error('DeepSeek API error:', response.status);
-          assistantMessage = '';
+      if (response.ok) {
+        const data = await response.json();
+        assistantMessage = data?.choices?.[0]?.message?.content || '';
+        if (assistantMessage) {
+          console.log('DeepSeek response successful:', assistantMessage.substring(0, 100));
         }
-      } catch (aiError) {
-        console.error('DeepSeek error:', aiError);
-        assistantMessage = '';
+      } else {
+        const errorText = await response.text();
+        console.error('DeepSeek API error:', response.status, errorText);
       }
+    } catch (aiError) {
+      console.error('DeepSeek connection error:', aiError);
     }
 
-    // 2. Try OpenAI API as fallback (if key is configured)
-    if (!assistantMessage && process.env.OPENAI_API_KEY) {
-      try {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages,
-            temperature: 0.7,
-            max_tokens: 500,
-          }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          assistantMessage = data?.choices?.[0]?.message?.content || '';
-          if (assistantMessage) {
-            console.log('OpenAI response successful');
-          }
-        } else {
-          console.error('OpenAI API error:', response.status);
-          assistantMessage = '';
-        }
-      } catch (aiError) {
-        console.error('OpenAI error:', aiError);
-        assistantMessage = '';
-      }
-    }
-
-    // 3. Try z-ai-web-dev-sdk as third fallback
+    // ═══ FALLBACK 1: z-ai-web-dev-sdk ═══
     if (!assistantMessage) {
       try {
+        console.log('Falling back to z-ai-web-dev-sdk...');
         const ZAI = (await import('z-ai-web-dev-sdk')).default;
         const zai = await ZAI.create();
         const completion = await zai.chat.completions.create({
@@ -137,16 +156,16 @@ export async function POST(request: NextRequest) {
         }
       } catch (sdkError) {
         console.error('z-ai-web-dev-sdk error:', sdkError);
-        assistantMessage = '';
       }
     }
 
-    // 4. Last resort: keyword-based fallback using knowledge base
+    // ═══ FALLBACK 2: Keyword-based smart responses ═══
     if (!assistantMessage) {
+      console.log('Falling back to keyword-based responses...');
       assistantMessage = await getSmartFallback(message);
     }
 
-    // Save messages to database
+    // Save messages to database for conversation history
     try {
       await db.chatMessage.createMany({
         data: [
@@ -161,11 +180,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       message: assistantMessage,
       sessionId,
+      source: assistantMessage ? 'deepseek' : 'fallback',
     });
   } catch (error) {
     console.error('Error in chat API:', error);
     return NextResponse.json(
-      { message: 'Lo siento, encontré un error. Por favor contáctenos al +1 (305) 244-9340 para asistencia inmediata.' },
+      {
+        message: 'Lo siento, encontré un error temporal. Por favor intente de nuevo o contáctenos directamente al +1 (305) 244-9340.',
+        error: true,
+      },
       { status: 200 }
     );
   }
@@ -220,98 +243,84 @@ function getKeywordBasedResponse(lower: string): string {
     lower.includes('buenos días') || lower.includes('buenas tardes') ||
     lower.includes('buenas noches') || lower.includes('cómo estás');
 
-  // Greetings
   if (/^(hi|hello|hey|hola|good morning|good afternoon|good evening|buenos días|buenas tardes|buenas noches|qué tal|que tal)/.test(lower)) {
     return isSpanish
       ? '¡Hola! Bienvenido a P&S Medical Device Inc. Estamos aquí para ayudarle con equipos de imagenología médica. ¿En qué puedo asistirle? Puede preguntar sobre equipos CT, MRI, Rayos X, Ultrasonido, Oftalmología, cotizaciones, servicios de reparación, o la venta de su equipo usado.'
       : 'Hello! Welcome to P&S Medical Device Inc. We are here to help you with medical imaging equipment. How can I assist you? Feel free to ask about CT, MRI, X-Ray, Ultrasound, Ophthalmology equipment, quotes, repair services, or selling your used equipment.';
   }
 
-  // Pricing
   if (lower.includes('price') || lower.includes('cost') || lower.includes('quote') || lower.includes('precio') || lower.includes('cuanto') || lower.includes('cuánto') || lower.includes('cotización') || lower.includes('valor')) {
     return isSpanish
       ? 'Para cotizaciones personalizadas, contáctenos directamente. Ofrecemos precios competitivos en equipos nuevos y reacondicionados con opciones de financiamiento.\n\n📞 +1 (305) 244-9340\n📧 michelgg0102780@gmail.com\n\nTambién puede visitar nuestra página de Contacto para enviar su solicitud.'
       : 'For personalized quotes, contact us directly. We offer competitive pricing on new and refurbished equipment with financing options.\n\n📞 +1 (305) 244-9340\n📧 michelgg0102780@gmail.com\n\nYou can also visit our Contact page to submit a quote request.';
   }
 
-  // Sell equipment
   if (lower.includes('sell') || lower.includes('vender') || lower.includes('compr') || lower.includes('buyback') || lower.includes('compra') || lower.includes('venta')) {
     return isSpanish
       ? '¡Compramos equipos médicos usados! Ofrecemos precios justos y manejamos toda la logística de retiro.\n\n1. Visite "Vender su Equipo" en nuestro sitio\n2. Ingrese los detalles de su equipo\n3. Reciba una oferta en 48 horas\n\n📞 Llame al +1 (305) 244-9340 para atención inmediata.'
       : 'We buy used medical imaging equipment! We offer fair prices and handle all removal logistics.\n\n1. Visit "Sell Your Equipment" on our website\n2. Enter your equipment details\n3. Receive an offer within 48 hours\n\n📞 Call +1 (305) 244-9340 for immediate assistance.';
   }
 
-  // Repair/Service
   if (lower.includes('repair') || lower.includes('service') || lower.includes('mantenimiento') || lower.includes('soporte') || lower.includes('reparación') || lower.includes('technical')) {
     return isSpanish
       ? 'Ofrecemos servicios completos de reparación y mantenimiento para equipos de imagenología médica:\n\n• Mantenimiento preventivo\n• Reparación de emergencia\n• Calibración y certificación\n• Actualizaciones de software\n\n📞 +1 (305) 244-9340 para solicitudes de servicio.'
       : 'We offer comprehensive repair and maintenance services for medical imaging equipment:\n\n• Preventive maintenance programs\n• Emergency repair services\n• Equipment calibration and certification\n• Software upgrades\n\n📞 Call +1 (305) 244-9340 for service requests.';
   }
 
-  // CT
   if (lower.includes('ct') || lower.includes('scanner') || lower.includes('tomografía') || lower.includes('tac')) {
     return isSpanish
       ? 'Contamos con escáneres CT de las mejores marcas: GE Revolution (256 cortes), Toshiba Aquilion ONE (320 filas), Siemens SOMATOM. Todas las unidades reacondicionadas incluyen garantía, instalación y capacitación. Contáctenos para disponibilidad.'
       : 'We carry CT Scanners from top brands: GE Revolution (256-slice), Toshiba Aquilion ONE (320-row), Siemens SOMATOM. All refurbished units include warranty, installation, and training. Contact us for current availability.';
   }
 
-  // MRI
   if (lower.includes('mri') || lower.includes('resonancia') || lower.includes('rmn')) {
     return isSpanish
       ? 'Nuestro inventario MRI incluye: Siemens Magnetom Vida 3T, Hitachi Echelon Oval 1.5T, GE Signa series. Sistemas nuevos y reacondicionados con paquetes completos de instalación y garantía.'
       : 'Our MRI inventory includes: Siemens Magnetom Vida 3T, Hitachi Echelon Oval 1.5T, GE Signa series. Both new and refurbished systems with full installation and warranty packages.';
   }
 
-  // Ultrasound
   if (lower.includes('ultrasound') || lower.includes('ecogra') || lower.includes('ultrasonido')) {
     return isSpanish
       ? 'Sistemas de ultrasonido disponibles: Philips IU Elite, Canon Aplio i800, GE LOGIQ E10. Ideales para radiología, cardiología, obstetricia y punto de atención.'
       : 'Available ultrasound systems: Philips IU Elite, Canon Aplio i800, GE LOGIQ E10. Ideal for radiology, cardiology, OB/GYN, and point-of-care.';
   }
 
-  // X-Ray
   if (lower.includes('x-ray') || lower.includes('rayos x') || lower.includes('radiogra')) {
     return isSpanish
       ? 'Equipos de rayos X: Carestream DRX-Evolution (digital), GE Optima XR646, Shimadzu Sonialvision (R/F). Todos con instalación, capacitación y garantía incluidas.'
       : 'X-Ray equipment: Carestream DRX-Evolution (digital), GE Optima XR646, Shimadzu Sonialvision (R/F). All include installation, training, and warranty.';
   }
 
-  // Ophthalmology
   if (lower.includes('ophthalmol') || lower.includes('oct') || lower.includes('eye') || lower.includes('oftalm') || lower.includes('ojo') || lower.includes('visión') || lower.includes('vision')) {
     return isSpanish
       ? 'Equipos oftalmológicos: Zeiss Cirrus HD-OCT 6000, Topcon Maestro 2 OCT, Heidelberg Spectralis OCT. Para manejo de glaucoma, enfermedades retinianas y cuidado ocular integral.'
       : 'Ophthalmology equipment: Zeiss Cirrus HD-OCT 6000, Topcon Maestro 2 OCT, Heidelberg Spectralis OCT. For glaucoma management, retinal disease assessment, and comprehensive eye care.';
   }
 
-  // Contact
   if (lower.includes('contact') || lower.includes('phone') || lower.includes('email') || lower.includes('llamar') || lower.includes('contacto') || lower.includes('teléfono') || lower.includes('ubicación') || lower.includes('location') || lower.includes('dirección')) {
     return isSpanish
       ? 'Puede contactarnos:\n\n📞 +1 (305) 244-9340\n📧 michelgg0102780@gmail.com\n📍 2234 Winter Woods, Unidad 1000, Winter Park, FL 32792\n🕐 Lunes a Viernes, 8:00 AM - 6:00 PM CST\n\nO visite nuestra página de Contacto.'
       : 'You can reach us:\n\n📞 +1 (305) 244-9340\n📧 michelgg0102780@gmail.com\n📍 2234 Winter Woods, Suite 1000, Winter Park, FL 32792\n🕐 Monday - Friday, 8:00 AM - 6:00 PM CST\n\nOr visit our Contact page.';
   }
 
-  // Thanks
   if (lower.includes('thank') || lower.includes('gracias') || lower.includes('thanks')) {
     return isSpanish
       ? '¡De nada! Fue un placer ayudarle. Si tiene más preguntas, no dude en escribirnos. Estamos aquí para asistirle. ¡Que tenga un excelente día!'
       : 'You are welcome! It was a pleasure helping you. If you have more questions, feel free to ask. We are always here to assist you. Have a great day!';
   }
 
-  // Refurbished/warranty
   if (lower.includes('refurbish') || lower.includes('reacondicionado') || lower.includes('used equipment') || lower.includes('equipo usado') || lower.includes('garantía') || lower.includes('warranty')) {
     return isSpanish
       ? 'Todos nuestros equipos reacondicionados pasan por un riguroso proceso de inspección y certificación. Incluyen: garantía, instalación profesional, capacitación del personal, y soporte técnico post-venta. ¡La misma calidad a una fracción del precio!'
       : 'All our refurbished equipment undergoes rigorous inspection and certification. They include: warranty, professional installation, staff training, and post-sale technical support. Same quality at a fraction of the price!';
   }
 
-  // Brands
   if (lower.includes('ge') || lower.includes('siemens') || lower.includes('philips') || lower.includes('toshiba') || lower.includes('canon') || lower.includes('hitachi') || lower.includes('zeiss') || lower.includes('topcon') || lower.includes('carestream') || lower.includes('shimadzu')) {
     return isSpanish
       ? 'Trabajamos con las marcas líderes del mercado: GE Healthcare, Siemens Healthineers, Philips, Canon Medical, Toshiba, Hitachi, Zeiss, Topcon, Carestream, Shimadzu, y más. ¿Hay alguna marca específica que le interese? Contáctenos para verificar disponibilidad.'
       : 'We work with leading brands: GE Healthcare, Siemens Healthineers, Philips, Canon Medical, Toshiba, Hitachi, Zeiss, Topcon, Carestream, Shimadzu, and more. Is there a specific brand you are interested in? Contact us for availability.';
   }
 
-  // Default
   if (isSpanish) {
     return 'Gracias por su interés en P&S Medical Device Inc. Puedo ayudarle con:\n\n• Escáneres CT y equipos MRI\n• Equipos de Rayos X y Ultrasonido\n• Equipos de Oftalmología\n• Cotizaciones y precios\n• Venta de equipos usados\n• Servicios de reparación y mantenimiento\n\n📞 +1 (305) 244-9340\n📧 michelgg0102780@gmail.com\n\n¿Sobre qué tema le gustaría más información?';
   }
