@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import {
   Wrench,
@@ -69,10 +70,22 @@ export default function ServicesPage() {
             <Card className="overflow-hidden">
               <CardContent className="p-0">
                 <div className="grid grid-cols-1 lg:grid-cols-5">
-                  <div className="lg:col-span-2 bg-gradient-to-br from-teal-600 to-teal-700 flex items-center justify-center p-10 sm:p-14">
-                    <div className="text-center">
-                      <Wrench className="h-16 w-16 text-white mx-auto mb-4" />
-                      <h2 className="text-2xl font-bold text-white">Equipment Repair & Maintenance</h2>
+                  <div className="lg:col-span-2 relative overflow-hidden min-h-[280px] sm:min-h-[340px]">
+                    <Image
+                      src="/images/services/repair-maintenance.jpg"
+                      alt="Medical equipment repair and maintenance by certified biomedical engineers"
+                      fill
+                      className="object-cover"
+                      priority
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-500">
+                          <Wrench className="h-5 w-5 text-white" />
+                        </div>
+                      </div>
+                      <h2 className="text-xl sm:text-2xl font-bold text-white leading-tight">Equipment Repair & Maintenance</h2>
                     </div>
                   </div>
                   <div className="lg:col-span-3 p-6 sm:p-10">
@@ -134,10 +147,21 @@ export default function ServicesPage() {
             <Card className="overflow-hidden">
               <CardContent className="p-0">
                 <div className="grid grid-cols-1 lg:grid-cols-5">
-                  <div className="lg:col-span-2 bg-gradient-to-br from-primary to-primary/90 flex items-center justify-center p-10 sm:p-14 order-2 lg:order-1">
-                    <div className="text-center">
-                      <Headphones className="h-16 w-16 text-white mx-auto mb-4" />
-                      <h2 className="text-2xl font-bold text-white">Technical Support & Training</h2>
+                  <div className="lg:col-span-2 relative overflow-hidden min-h-[280px] sm:min-h-[340px] order-2 lg:order-1">
+                    <Image
+                      src="/images/services/technical-support.jpg"
+                      alt="Medical equipment technical support and staff training programs"
+                      fill
+                      className="object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-500">
+                          <Headphones className="h-5 w-5 text-white" />
+                        </div>
+                      </div>
+                      <h2 className="text-xl sm:text-2xl font-bold text-white leading-tight">Technical Support & Training</h2>
                     </div>
                   </div>
                   <div className="lg:col-span-3 p-6 sm:p-10 order-1 lg:order-2">
@@ -207,10 +231,21 @@ export default function ServicesPage() {
             <Card className="overflow-hidden">
               <CardContent className="p-0">
                 <div className="grid grid-cols-1 lg:grid-cols-5">
-                  <div className="lg:col-span-2 bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center p-10 sm:p-14">
-                    <div className="text-center">
-                      <MessageSquare className="h-16 w-16 text-white mx-auto mb-4" />
-                      <h2 className="text-2xl font-bold text-white">Consultative Sales Advisory</h2>
+                  <div className="lg:col-span-2 relative overflow-hidden min-h-[280px] sm:min-h-[340px]">
+                    <Image
+                      src="/images/services/sales-advisory.jpg"
+                      alt="Professional medical equipment sales consultation and advisory services"
+                      fill
+                      className="object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-500">
+                          <MessageSquare className="h-5 w-5 text-white" />
+                        </div>
+                      </div>
+                      <h2 className="text-xl sm:text-2xl font-bold text-white leading-tight">Consultative Sales Advisory</h2>
                     </div>
                   </div>
                   <div className="lg:col-span-3 p-6 sm:p-10">
