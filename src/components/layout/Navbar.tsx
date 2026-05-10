@@ -54,7 +54,7 @@ export function Navbar() {
             alt="P&S Medical Device Inc."
             width={70}
             height={70}
-            className="rounded-xl object-contain transition-transform group-hover:scale-105 shadow-sm"
+            className="rounded-full object-cover transition-transform group-hover:scale-105 shadow-sm"
             priority
           />
           <div>
@@ -119,7 +119,7 @@ export function Navbar() {
                   alt="P&S Medical Device Inc."
                   width={50}
                   height={50}
-                  className="rounded-xl object-contain shadow-sm"
+                  className="rounded-full object-cover shadow-sm"
                 />
                 P&S Medical Device Inc.
               </SheetTitle>

@@ -48,7 +48,7 @@ export function Footer() {
                 alt="P&S Medical Device Inc."
                 width={65}
                 height={65}
-                className="rounded-xl object-contain transition-transform group-hover:scale-105 brightness-0 invert shadow-sm"
+                className="rounded-full object-cover transition-transform group-hover:scale-105 brightness-0 invert shadow-sm"
               />
               <div>
                 <span className="text-lg font-bold leading-tight tracking-tight text-white">
