@@ -1,6 +1,7 @@
 import { TrustBar } from "@/components/layout/TrustBar";
 import { CTASection } from "@/components/layout/CTASection";
 import { LeadForm } from "@/components/layout/LeadForm";
+import { BlogSection } from "@/components/layout/BlogSection";
 import {
   Search,
   ArrowRight,
@@ -230,6 +231,9 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Blog Section */}
+      <BlogSection />
 
       {/* CTA Section */}
       <CTASection

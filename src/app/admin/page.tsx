@@ -52,6 +52,10 @@ import {
   Share2,
   ChevronDown,
   ChevronUp,
+  Newspaper,
+  Send,
+  ToggleLeft,
+  ToggleRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -196,6 +200,23 @@ interface PaymentConfigData {
   config: Record<string, string>;
 }
 
+interface BlogPostData {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  content: string;
+  coverImage: string;
+  category: string;
+  author: string;
+  tags: string;
+  isPublished: boolean;
+  isFeatured: boolean;
+  readTime: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /* ─── Navigation Items ─── */
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -206,6 +227,7 @@ const navItems = [
   { id: 'sell-requests', label: 'Ventas', icon: ShoppingBag },
   { id: 'reviews', label: 'Resenas', icon: Star },
   { id: 'users', label: 'Usuarios', icon: Users },
+  { id: 'blog', label: 'Blog', icon: Newspaper },
   { id: 'ai-training', label: 'IA Entrenamiento', icon: Brain },
   { id: 'settings', label: 'Configuracion', icon: Settings },
 ];
@@ -280,6 +302,17 @@ export default function AdminPage() {
   const [orderStatusFilter, setOrderStatusFilter] = useState('all');
   const [orderDetailOpen, setOrderDetailOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+
+  // Blog state
+  const [blogPosts, setBlogPosts] = useState<BlogPostData[]>([]);
+  const [blogDialogOpen, setBlogDialogOpen] = useState(false);
+  const [editingBlogPost, setEditingBlogPost] = useState<BlogPostData | null>(null);
+  const [blogForm, setBlogForm] = useState({
+    title: '', slug: '', excerpt: '', content: '', coverImage: '',
+    category: 'Technology', author: 'P&S Medical Device Inc.', tags: '',
+    isPublished: false, isFeatured: false, readTime: 5,
+  });
+  const [blogCategoryFilter, setBlogCategoryFilter] = useState('all');
 
   // Payment Gateways state
   const [paymentConfigs, setPaymentConfigs] = useState<Record<string, PaymentConfigData>>({});
@@ -451,6 +484,16 @@ export default function AdminPage() {
     } catch { toast.error('Error al cargar configuracion de pagos'); }
   }, []);
 
+  const fetchBlogPosts = useCallback(async () => {
+    try {
+      const params = new URLSearchParams({ limit: '100' });
+      if (blogCategoryFilter !== 'all') params.set('category', blogCategoryFilter);
+      const res = await fetch(`/api/admin/blog?${params}`);
+      const data = await res.json();
+      if (res.ok) setBlogPosts(data.posts || []);
+    } catch { toast.error('Error al cargar posts del blog'); }
+  }, [blogCategoryFilter]);
+
   const savePaymentConfig = async (gateway: string, config: Record<string, string | boolean>, isActive: boolean) => {
     setSavingPaymentConfig(true);
     try {
@@ -485,7 +528,8 @@ export default function AdminPage() {
     fetchPaymentConfigs();
     if (activeTab === 'ai-training') fetchAiKnowledge();
     if (activeTab === 'orders') fetchOrders();
-  }, [isAuthenticated, fetchDashboardData, fetchUsers, fetchSettings, fetchPaymentConfigs, activeTab, fetchAiKnowledge, fetchOrders]);
+    if (activeTab === 'blog') fetchBlogPosts();
+  }, [isAuthenticated, fetchDashboardData, fetchUsers, fetchSettings, fetchPaymentConfigs, activeTab, fetchAiKnowledge, fetchOrders, fetchBlogPosts]);
 
   /* ─── AI Knowledge actions ─── */
   const openKnowledgeDialog = (entry?: AiKnowledge) => {
@@ -736,12 +780,15 @@ export default function AdminPage() {
         res = await fetch(`/api/reviews/${deleteTarget.id}`, { method: 'DELETE' });
       } else if (deleteTarget.type === 'user') {
         res = await fetch(`/api/admin/users/${deleteTarget.id}`, { method: 'DELETE' });
+      } else if (deleteTarget.type === 'blog-post') {
+        res = await fetch(`/api/admin/blog/${deleteTarget.id}`, { method: 'DELETE' });
       }
 
       if (res && res.ok) {
         toast.success('Deleted successfully');
         fetchDashboardData();
         fetchUsers();
+        fetchBlogPosts();
       } else {
         toast.error('Failed to delete');
       }
@@ -819,6 +866,112 @@ export default function AdminPage() {
     } catch {
       toast.error('Update failed');
     }
+  };
+
+  /* ─── Blog Post actions ─── */
+  const openBlogDialog = (post?: BlogPostData) => {
+    if (post) {
+      setEditingBlogPost(post);
+      setBlogForm({
+        title: post.title,
+        slug: post.slug,
+        excerpt: post.excerpt || '',
+        content: post.content || '',
+        coverImage: post.coverImage || '',
+        category: post.category || 'Technology',
+        author: post.author || 'P&S Medical Device Inc.',
+        tags: post.tags || '',
+        isPublished: post.isPublished,
+        isFeatured: post.isFeatured,
+        readTime: post.readTime || 5,
+      });
+    } else {
+      setEditingBlogPost(null);
+      setBlogForm({
+        title: '', slug: '', excerpt: '', content: '', coverImage: '',
+        category: 'Technology', author: 'P&S Medical Device Inc.', tags: '',
+        isPublished: false, isFeatured: false, readTime: 5,
+      });
+    }
+    setBlogDialogOpen(true);
+  };
+
+  const generateSlug = (title: string) => {
+    return title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim();
+  };
+
+  const handleBlogTitleChange = (title: string) => {
+    setBlogForm(prev => ({
+      ...prev,
+      title,
+      slug: editingBlogPost ? prev.slug : generateSlug(title),
+    }));
+  };
+
+  const handleBlogSubmit = async () => {
+    try {
+      let res;
+      if (editingBlogPost) {
+        res = await fetch(`/api/admin/blog/${editingBlogPost.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(blogForm),
+        });
+      } else {
+        res = await fetch('/api/admin/blog', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(blogForm),
+        });
+      }
+      if (res.ok) {
+        toast.success(editingBlogPost ? 'Post actualizado' : 'Post creado');
+        setBlogDialogOpen(false);
+        fetchBlogPosts();
+      } else {
+        const d = await res.json();
+        toast.error(d.error || 'Error al guardar');
+      }
+    } catch {
+      toast.error('Error al guardar post');
+    }
+  };
+
+  const toggleBlogPublish = async (post: BlogPostData) => {
+    try {
+      const res = await fetch(`/api/admin/blog/${post.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isPublished: !post.isPublished }),
+      });
+      if (res.ok) { toast.success(post.isPublished ? 'Post despublicado' : 'Post publicado'); fetchBlogPosts(); }
+      else toast.error('Error al actualizar');
+    } catch { toast.error('Error al actualizar'); }
+  };
+
+  const toggleBlogFeatured = async (post: BlogPostData) => {
+    try {
+      const res = await fetch(`/api/admin/blog/${post.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isFeatured: !post.isFeatured }),
+      });
+      if (res.ok) { toast.success('Estado destacado actualizado'); fetchBlogPosts(); }
+      else toast.error('Error al actualizar');
+    } catch { toast.error('Error al actualizar'); }
+  };
+
+  const deleteBlogPost = async (id: string) => {
+    try {
+      const res = await fetch(`/api/admin/blog/${id}`, { method: 'DELETE' });
+      if (res.ok) { toast.success('Post eliminado'); fetchBlogPosts(); }
+      else toast.error('Error al eliminar');
+    } catch { toast.error('Error al eliminar'); }
   };
 
   /* ─── User actions ─── */
@@ -2172,6 +2325,227 @@ export default function AdminPage() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── BLOG TAB ─── */}
+      {activeTab === 'blog' && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Blog Posts</h3>
+              <p className="text-sm text-gray-500">{blogPosts.length} total posts</p>
+            </div>
+            <Button onClick={() => openBlogDialog()} className="gap-2 bg-primary hover:bg-primary/90">
+              <Plus className="h-4 w-4" /> Nuevo Post
+            </Button>
+          </div>
+
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-50/80">
+                      <TableHead className="pl-4">Titulo</TableHead>
+                      <TableHead>Categoria</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Featured</TableHead>
+                      <TableHead>Fecha</TableHead>
+                      <TableHead className="pr-4">Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {blogPosts.map((post) => (
+                      <TableRow key={post.id}>
+                        <TableCell className="pl-4">
+                          <div>
+                            <p className="font-medium text-gray-900 max-w-[250px] truncate">{post.title}</p>
+                            <p className="text-xs text-gray-400">/{post.slug}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="text-xs">{post.category}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <button
+                            onClick={() => toggleBlogPublish(post)}
+                            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium cursor-pointer transition-colors ${
+                              post.isPublished
+                                ? 'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200'
+                                : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'
+                            }`}
+                          >
+                            {post.isPublished ? <Check className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+                            {post.isPublished ? 'Publicado' : 'Borrador'}
+                          </button>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className={`h-8 w-8 ${post.isFeatured ? 'text-amber-400' : 'text-gray-300'}`}
+                            onClick={() => toggleBlogFeatured(post)}
+                          >
+                            <Star className={`h-4 w-4 ${post.isFeatured ? 'fill-amber-400' : ''}`} />
+                          </Button>
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-500">{formatDate(post.createdAt)}</TableCell>
+                        <TableCell className="pr-4">
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600" onClick={() => openBlogDialog(post)} title="Editar">
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <a href={`/blog/${post.slug}`} target="_blank" rel="noopener noreferrer">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500" title="Ver">
+                                <Eye className="h-3.5 w-3.5" />
+                              </Button>
+                            </a>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => confirmDelete('blog-post', post.id, post.title)} title="Eliminar">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {blogPosts.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="py-12 text-center text-gray-400">
+                          <Newspaper className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                          No posts found. Crea tu primer articulo!
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Blog Post Dialog */}
+      <Dialog open={blogDialogOpen} onOpenChange={setBlogDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingBlogPost ? 'Editar Post' : 'Nuevo Post del Blog'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <Label htmlFor="blog-title">Titulo *</Label>
+                <Input
+                  id="blog-title"
+                  placeholder="Ej: Los avances en IA para diagnosticos medicos"
+                  value={blogForm.title}
+                  onChange={(e) => handleBlogTitleChange(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="blog-slug">URL Slug *</Label>
+                <Input
+                  id="blog-slug"
+                  placeholder="ej: avances-ia-diagnosticos"
+                  value={blogForm.slug}
+                  onChange={(e) => setBlogForm({ ...blogForm, slug: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="blog-category">Categoria</Label>
+                <Select value={blogForm.category} onValueChange={(v) => setBlogForm({ ...blogForm, category: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Technology">Technology</SelectItem>
+                    <SelectItem value="Industry News">Industry News</SelectItem>
+                    <SelectItem value="Research">Research</SelectItem>
+                    <SelectItem value="Innovation">Innovation</SelectItem>
+                    <SelectItem value="CEO Insights">CEO Insights</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="blog-author">Autor</Label>
+                <Input
+                  id="blog-author"
+                  value={blogForm.author}
+                  onChange={(e) => setBlogForm({ ...blogForm, author: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="blog-readtime">Tiempo de lectura (min)</Label>
+                <Input
+                  id="blog-readtime"
+                  type="number"
+                  min={1}
+                  max={60}
+                  value={blogForm.readTime}
+                  onChange={(e) => setBlogForm({ ...blogForm, readTime: parseInt(e.target.value) || 5 })}
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <Label htmlFor="blog-excerpt">Resumen</Label>
+                <Textarea
+                  id="blog-excerpt"
+                  placeholder="Breve descripcion del articulo..."
+                  rows={2}
+                  value={blogForm.excerpt}
+                  onChange={(e) => setBlogForm({ ...blogForm, excerpt: e.target.value })}
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <Label htmlFor="blog-cover">URL de imagen de portada</Label>
+                <Input
+                  id="blog-cover"
+                  placeholder="https://ejemplo.com/imagen.jpg"
+                  value={blogForm.coverImage}
+                  onChange={(e) => setBlogForm({ ...blogForm, coverImage: e.target.value })}
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <Label htmlFor="blog-tags">Tags (separados por coma)</Label>
+                <Input
+                  id="blog-tags"
+                  placeholder="IA, diagnostico, radiologia, innovacion"
+                  value={blogForm.tags}
+                  onChange={(e) => setBlogForm({ ...blogForm, tags: e.target.value })}
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <Label htmlFor="blog-content">Contenido (Markdown) *</Label>
+                <Textarea
+                  id="blog-content"
+                  placeholder="Escribe el contenido del articulo en Markdown..."
+                  rows={12}
+                  className="font-mono text-sm"
+                  value={blogForm.content}
+                  onChange={(e) => setBlogForm({ ...blogForm, content: e.target.value })}
+                />
+              </div>
+              <div className="flex items-center gap-4 sm:col-span-2">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={blogForm.isPublished}
+                    onCheckedChange={(v) => setBlogForm({ ...blogForm, isPublished: v })}
+                  />
+                  <Label className="cursor-pointer">Publicado</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={blogForm.isFeatured}
+                    onCheckedChange={(v) => setBlogForm({ ...blogForm, isFeatured: v })}
+                  />
+                  <Label className="cursor-pointer">Destacado</Label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setBlogDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={handleBlogSubmit} className="bg-primary hover:bg-primary/90" disabled={!blogForm.title || !blogForm.slug || !blogForm.content}>
+              <Save className="h-4 w-4 mr-1" />
+              {editingBlogPost ? 'Actualizar' : 'Crear Post'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

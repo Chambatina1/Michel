@@ -26,6 +26,7 @@ const navLinks = [
     highlight: true,
   },
   { label: "Services", href: "/services" },
+  { label: "Blog", href: "/blog" },
   { label: "About", href: "/about" },
   { label: "Reviews", href: "/reviews" },
   { label: "Contact", href: "/contact" },

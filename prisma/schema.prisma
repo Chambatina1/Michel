@@ -127,6 +127,23 @@ model ChatMessage {
   createdAt DateTime @default(now())
 }
 
+model BlogPost {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  excerpt     String   // short summary
+  content     String   // full article content (markdown)
+  coverImage  String   @default("") // cover image URL
+  category    String   @default("Technology") // Technology, Industry News, Research, Innovation, CEO Insights
+  author      String   @default("P&S Medical Device Inc.")
+  tags        String   @default("") // comma-separated tags
+  isPublished Boolean  @default(false)
+  isFeatured  Boolean  @default(false)
+  readTime    Int      @default(5) // estimated read time in minutes
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model AiKnowledge {
   id        String   @id @default(cuid())
   category  String   // product_info, pricing, services, faq, policies, general
