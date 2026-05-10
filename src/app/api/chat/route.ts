@@ -104,58 +104,62 @@ export async function POST(request: NextRequest) {
     ];
 
     let assistantMessage: string = '';
+    let aiSource: string = '';
 
-    // ═══ PRIMARY: DeepSeek AI ═══
+    // ═══ PRIMARY: z-ai-web-dev-sdk (always available) ═══
     try {
-      console.log('Calling DeepSeek API...');
-      const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: 'deepseek-chat',
-          messages,
-          temperature: 0.7,
-          max_tokens: 800,
-          presence_penalty: 0.6,
-          frequency_penalty: 0.3,
-        }),
+      console.log('Calling z-ai-web-dev-sdk...');
+      const ZAI = (await import('z-ai-web-dev-sdk')).default;
+      const zai = await ZAI.create();
+      const sdkMessages = messages.map(m => ({
+        role: m.role as 'system' | 'user' | 'assistant',
+        content: m.content,
+      }));
+      const completion = await zai.chat.completions.create({
+        messages: sdkMessages,
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        assistantMessage = data?.choices?.[0]?.message?.content || '';
-        if (assistantMessage) {
-          console.log('DeepSeek response successful:', assistantMessage.substring(0, 100));
-        }
-      } else {
-        const errorText = await response.text();
-        console.error('DeepSeek API error:', response.status, errorText);
+      assistantMessage = completion?.choices?.[0]?.message?.content || '';
+      if (assistantMessage) {
+        aiSource = 'z-ai-sdk';
+        console.log('z-ai-web-dev-sdk response successful');
       }
-    } catch (aiError) {
-      console.error('DeepSeek connection error:', aiError);
+    } catch (sdkError) {
+      console.error('z-ai-web-dev-sdk error:', sdkError);
     }
 
-    // ═══ FALLBACK 1: z-ai-web-dev-sdk ═══
+    // ═══ FALLBACK 1: DeepSeek AI (requires active balance) ═══
     if (!assistantMessage) {
       try {
-        console.log('Falling back to z-ai-web-dev-sdk...');
-        const ZAI = (await import('z-ai-web-dev-sdk')).default;
-        const zai = await ZAI.create();
-        const completion = await zai.chat.completions.create({
-          messages: [
-            { role: 'system', content: fullSystemPrompt },
-            { role: 'user', content: message },
-          ],
+        console.log('Trying DeepSeek API as fallback...');
+        const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: 'deepseek-chat',
+            messages,
+            temperature: 0.7,
+            max_tokens: 800,
+            presence_penalty: 0.6,
+            frequency_penalty: 0.3,
+          }),
         });
-        assistantMessage = completion?.choices?.[0]?.message?.content || '';
-        if (assistantMessage) {
-          console.log('z-ai-web-dev-sdk response successful');
+
+        if (response.ok) {
+          const data = await response.json();
+          assistantMessage = data?.choices?.[0]?.message?.content || '';
+          if (assistantMessage) {
+            aiSource = 'deepseek';
+            console.log('DeepSeek response successful');
+          }
+        } else {
+          const errorText = await response.text();
+          console.error('DeepSeek API error:', response.status, errorText);
         }
-      } catch (sdkError) {
-        console.error('z-ai-web-dev-sdk error:', sdkError);
+      } catch (aiError) {
+        console.error('DeepSeek connection error:', aiError);
       }
     }
 
@@ -163,6 +167,7 @@ export async function POST(request: NextRequest) {
     if (!assistantMessage) {
       console.log('Falling back to keyword-based responses...');
       assistantMessage = await getSmartFallback(message);
+      aiSource = 'keyword-fallback';
     }
 
     // Save messages to database for conversation history
@@ -180,7 +185,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       message: assistantMessage,
       sessionId,
-      source: assistantMessage ? 'deepseek' : 'fallback',
+      source: aiSource,
     });
   } catch (error) {
     console.error('Error in chat API:', error);
