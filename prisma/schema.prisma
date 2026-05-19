@@ -31,6 +31,7 @@ model Product {
   features    String   // JSON string of features
   imageUrl    String
   images      String   // JSON array of image URLs
+  videos      String   @default("[]") // JSON array of video URLs
   status      String   @default("active") // active, sold, reserved
   isFeatured   Boolean  @default(false)
   isNegotiable Boolean  @default(false) // price is negotiable / request quote

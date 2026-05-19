@@ -15,12 +15,13 @@ export async function PATCH(
     }
 
     const updateData: Record<string, unknown> = {};
-    const allowedFields = ['name', 'slug', 'category', 'condition', 'price', 'description', 'specs', 'features', 'imageUrl', 'images', 'status', 'isFeatured', 'isNegotiable'];
+    const allowedFields = ['name', 'slug', 'category', 'condition', 'price', 'description', 'specs', 'features', 'imageUrl', 'images', 'videos', 'status', 'isFeatured', 'isNegotiable'];
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
         if (field === 'specs') updateData.specs = typeof body[field] === 'string' ? body[field] : JSON.stringify(body[field]);
         else if (field === 'features') updateData.features = typeof body[field] === 'string' ? body[field] : JSON.stringify(body[field]);
         else if (field === 'images') updateData.images = typeof body[field] === 'string' ? body[field] : JSON.stringify(body[field]);
+        else if (field === 'videos') updateData.videos = typeof body[field] === 'string' ? body[field] : JSON.stringify(body[field]);
         else updateData[field] = body[field];
       }
     }

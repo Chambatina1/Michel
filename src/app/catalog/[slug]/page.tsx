@@ -137,6 +137,7 @@ interface Product {
   specs: Record<string, string>;
   features: string[];
   images: string[];
+  videos: string[];
   isFeatured: boolean;
   imageUrl: string;
 }
@@ -263,6 +264,8 @@ export default function ProductDetailPage() {
 
   const IconComponent = CATEGORY_ICONS[product.category] || MonitorSmartphone;
   const specsEntries = Object.entries(product.specs || {});
+  const allImages = product.images && product.images.length > 0 ? product.images : [product.imageUrl];
+  const [mainImage, setMainImage] = useState(allImages[0] || product.imageUrl);
 
   return (
     <>
@@ -310,14 +313,36 @@ export default function ProductDetailPage() {
               animate="visible"
               transition={{ duration: 0.5 }}
             >
-              <div className="relative flex h-72 sm:h-80 lg:h-[440px] items-center justify-center rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 overflow-hidden">
-                <IconComponent className="h-24 w-24 sm:h-32 sm:w-32 text-slate-300 dark:text-slate-600" />
-                {product.isFeatured && (
-                  <div className="absolute top-4 left-4">
-                    <Badge className="bg-teal-600 text-white hover:bg-teal-700 gap-1 px-3 py-1">
-                      <Star className="h-3.5 w-3.5" />
-                      Featured Equipment
-                    </Badge>
+              {/* Image Gallery */}
+              <div className="space-y-3">
+                {/* Main Image */}
+                <div className="relative flex h-72 sm:h-80 lg:h-[440px] items-center justify-center rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 overflow-hidden">
+                  {mainImage && mainImage !== '/images/placeholder-equipment.svg' ? (
+                    <img src={mainImage} alt={product.name} className="h-full w-full object-contain p-4" />
+                  ) : (
+                    <IconComponent className="h-24 w-24 sm:h-32 sm:w-32 text-slate-300 dark:text-slate-600" />
+                  )}
+                  {product.isFeatured && (
+                    <div className="absolute top-4 left-4">
+                      <Badge className="bg-teal-600 text-white hover:bg-teal-700 gap-1 px-3 py-1">
+                        <Star className="h-3.5 w-3.5" />
+                        Featured Equipment
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+                {/* Thumbnail Strip */}
+                {allImages.length > 1 && (
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {allImages.map((img, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setMainImage(img)}
+                        className={`shrink-0 h-16 w-16 rounded-lg border-2 overflow-hidden transition-all ${mainImage === img ? 'border-teal-600 ring-1 ring-teal-600' : 'border-transparent opacity-70 hover:opacity-100'}`}
+                      >
+                        <img src={img} alt={`View ${idx + 1}`} className="h-full w-full object-cover" />
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>
@@ -454,6 +479,43 @@ export default function ProductDetailPage() {
                   </li>
                 ))}
               </ul>
+            </motion.div>
+          </div>
+        </section>
+      )}
+
+      {/* Demo Videos */}
+      {product.videos && product.videos.length > 0 && (
+        <section className="py-10 sm:py-14">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <motion.div
+              variants={fadeInUp}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              transition={{ duration: 0.4 }}
+            >
+              <h2 className="text-xl font-bold text-foreground sm:text-2xl mb-6">Equipment Demo Videos</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {product.videos.map((videoUrl, idx) => (
+                  <div key={idx} className="aspect-video rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800">
+                    {videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be') ? (
+                      <iframe
+                        src={videoUrl.replace('watch?v=', 'embed/')}
+                        title={`Demo video ${idx + 1}`}
+                        className="h-full w-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <video controls className="h-full w-full" preload="metadata">
+                        <source src={videoUrl} type="video/mp4" />
+                        Your browser does not support video playback.
+                      </video>
+                    )}
+                  </div>
+                ))}
+              </div>
             </motion.div>
           </div>
         </section>

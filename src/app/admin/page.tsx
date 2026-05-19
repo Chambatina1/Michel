@@ -275,7 +275,8 @@ export default function AdminPage() {
   // Product form
   const [productForm, setProductForm] = useState({
     name: '', slug: '', category: '', condition: '', price: '', description: '',
-    imageUrl: '', status: 'active', isFeatured: false, isNegotiable: false,
+    imageUrl: '', images: '[]', videos: '[]', specs: '{}', features: '[]',
+    status: 'active', isFeatured: false, isNegotiable: false,
   });
   const [imageUploading, setImageUploading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string>('');
@@ -641,7 +642,7 @@ export default function AdminPage() {
   };
 
   /* ─── Product CRUD ─── */
-  const openProductDialog = (product?: Product) => {
+  const openProductDialog = (product?: any) => {
     if (product) {
       setEditingProduct(product);
       setProductForm({
@@ -652,6 +653,10 @@ export default function AdminPage() {
         price: product.price?.toString() || '',
         description: product.description,
         imageUrl: product.imageUrl,
+        images: product.images || '[]',
+        videos: product.videos || '[]',
+        specs: product.specs || '{}',
+        features: product.features || '[]',
         status: product.status,
         isFeatured: product.isFeatured,
         isNegotiable: product.isNegotiable || false,
@@ -660,7 +665,8 @@ export default function AdminPage() {
       setEditingProduct(null);
       setProductForm({
         name: '', slug: '', category: '', condition: '', price: '', description: '',
-        imageUrl: '', status: 'active', isFeatured: false, isNegotiable: false,
+        imageUrl: '', images: '[]', videos: '[]', specs: '{}', features: '[]',
+        status: 'active', isFeatured: false, isNegotiable: false,
       });
     }
     // Set preview when editing
@@ -708,6 +714,69 @@ export default function AdminPage() {
     }
   };
 
+  const handleMultiImageUpload = async (files: FileList) => {
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith('image/')) {
+        toast.error(`"${file.name}" is not an image file`);
+        continue;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`"${file.name}" exceeds 10MB limit`);
+        continue;
+      }
+      try {
+        const formData = new FormData();
+        formData.append('image', file);
+        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (res.ok && data.url) {
+          setProductForm(prev => {
+            const currentImages: string[] = JSON.parse(prev.images || '[]');
+            const updated = [...currentImages, data.url];
+            return { ...prev, images: JSON.stringify(updated) };
+          });
+          toast.success(`Uploaded: ${file.name}`);
+        } else {
+          toast.error(`Failed: ${file.name}`);
+        }
+      } catch {
+        toast.error(`Error uploading: ${file.name}`);
+      }
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setProductForm(prev => {
+      const currentImages: string[] = JSON.parse(prev.images || '[]');
+      currentImages.splice(index, 1);
+      return { ...prev, images: JSON.stringify(currentImages) };
+    });
+  };
+
+  const addVideoUrl = () => {
+    setProductForm(prev => {
+      const currentVideos: string[] = JSON.parse(prev.videos || '[]');
+      currentVideos.push('');
+      return { ...prev, videos: JSON.stringify(currentVideos) };
+    });
+  };
+
+  const updateVideoUrl = (index: number, url: string) => {
+    setProductForm(prev => {
+      const currentVideos: string[] = JSON.parse(prev.videos || '[]');
+      currentVideos[index] = url;
+      return { ...prev, videos: JSON.stringify(currentVideos) };
+    });
+  };
+
+  const removeVideo = (index: number) => {
+    setProductForm(prev => {
+      const currentVideos: string[] = JSON.parse(prev.videos || '[]');
+      currentVideos.splice(index, 1);
+      return { ...prev, videos: JSON.stringify(currentVideos) };
+    });
+  };
+
   const handleDropZoneClick = () => {
     const input = document.getElementById('image-upload-input') as HTMLInputElement;
     if (input) input.click();
@@ -740,6 +809,10 @@ export default function AdminPage() {
       const payload = {
         ...productForm,
         price: productForm.price ? parseFloat(productForm.price) : null,
+        images: productForm.images,
+        videos: productForm.videos,
+        specs: productForm.specs,
+        features: productForm.features,
       };
 
       let res;
@@ -2127,49 +2200,191 @@ export default function AdminPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <h2 className="text-xl font-bold text-foreground">Page Content Management</h2>
-                      <p className="text-sm text-muted-foreground">Edit the content displayed on your website pages</p>
+                      <p className="text-sm text-muted-foreground">Edit all content visible on your website pages</p>
                     </div>
+                    <Button onClick={handleSaveSettings} className="bg-accent text-accent-foreground">
+                      <Save className="mr-2 h-4 w-4" />
+                      Save All Changes
+                    </Button>
                   </div>
+
                   <div className="grid gap-4">
+                    {/* ── HERO SECTION ── */}
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <ImageIcon className="h-4 w-4" /> Hero Banner Section
+                        </CardTitle>
+                        <p className="text-xs text-muted-foreground">Main banner on the homepage</p>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-xs">Badge Text</Label>
+                            <Input value={settings.hero_badge || ''} onChange={(e) => setSettings(prev => ({ ...prev, hero_badge: e.target.value }))} placeholder="Trusted by 500+ Healthcare Facilities" />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Badge Icon (lucide icon name)</Label>
+                            <Input value={settings.hero_badge_icon || ''} onChange={(e) => setSettings(prev => ({ ...prev, hero_badge_icon: e.target.value }))} placeholder="HeartPulse" />
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Main Headline</Label>
+                          <Textarea value={settings.hero_headline || ''} onChange={(e) => setSettings(prev => ({ ...prev, hero_headline: e.target.value }))} placeholder="Medical Imaging & Ophthalmology" rows={2} />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Accent Line (colored part)</Label>
+                          <Input value={settings.hero_accent || ''} onChange={(e) => setSettings(prev => ({ ...prev, hero_accent: e.target.value }))} placeholder="Equipment You Can Trust" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Subtitle / Description</Label>
+                          <Textarea value={settings.hero_subtitle || ''} onChange={(e) => setSettings(prev => ({ ...prev, hero_subtitle: e.target.value }))} placeholder="From CT scanners to ophthalmology devices..." rows={3} />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-xs">Primary Button Text</Label>
+                            <Input value={settings.hero_btn_primary || ''} onChange={(e) => setSettings(prev => ({ ...prev, hero_btn_primary: e.target.value }))} placeholder="Browse Equipment" />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Secondary Button Text</Label>
+                            <Input value={settings.hero_btn_secondary || ''} onChange={(e) => setSettings(prev => ({ ...prev, hero_btn_secondary: e.target.value }))} placeholder="Sell Your Equipment" />
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* ── STATS SECTION ── */}
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <TrendingUp className="h-4 w-4" /> Stats Section
+                        </CardTitle>
+                        <p className="text-xs text-muted-foreground">Numbers shown below the categories section</p>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {[
+                          { key: 'stat1_value', labelKey: 'stat1_label', placeholder_val: '500+', placeholder_label: 'Healthcare Clients' },
+                          { key: 'stat2_value', labelKey: 'stat2_label', placeholder_val: '2,000+', placeholder_label: 'Devices Sold' },
+                          { key: 'stat3_value', labelKey: 'stat3_label', placeholder_val: '15+', placeholder_label: 'Years Experience' },
+                          { key: 'stat4_value', labelKey: 'stat4_label', placeholder_val: '98%', placeholder_label: 'Client Satisfaction' },
+                        ].map((stat, idx) => (
+                          <div key={idx} className="grid grid-cols-2 gap-3 items-end">
+                            <div>
+                              <Label className="text-xs">Value #{idx + 1}</Label>
+                              <Input value={settings[stat.key] || ''} onChange={(e) => setSettings(prev => ({ ...prev, [stat.key]: e.target.value }))} placeholder={stat.placeholder_val} />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Label #{idx + 1}</Label>
+                              <Input value={settings[stat.labelKey] || ''} onChange={(e) => setSettings(prev => ({ ...prev, [stat.labelKey]: e.target.value }))} placeholder={stat.placeholder_label} />
+                            </div>
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+
+                    {/* ── WHY CHOOSE US ── */}
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Shield className="h-4 w-4" /> Why Choose Us Section
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div>
+                          <Label className="text-xs">Section Title</Label>
+                          <Textarea value={settings.why_title || ''} onChange={(e) => setSettings(prev => ({ ...prev, why_title: e.target.value }))} placeholder="Why Healthcare Facilities Choose P&S Medical Device Inc." rows={2} />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Section Description</Label>
+                          <Textarea value={settings.why_description || ''} onChange={(e) => setSettings(prev => ({ ...prev, why_description: e.target.value }))} rows={3} />
+                        </div>
+                        {[1, 2, 3, 4].map((idx) => (
+                          <div key={idx} className="grid grid-cols-2 gap-3">
+                            <div>
+                              <Label className="text-xs">Feature #{idx} Title</Label>
+                              <Input value={settings[`why_f${idx}_title`] || ''} onChange={(e) => setSettings(prev => ({ ...prev, [`why_f${idx}_title`]: e.target.value }))} placeholder="Quality Guaranteed" />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Feature #{idx} Description</Label>
+                              <Input value={settings[`why_f${idx}_desc`] || ''} onChange={(e) => setSettings(prev => ({ ...prev, [`why_f${idx}_desc`]: e.target.value }))} placeholder="Every device undergoes testing..." />
+                            </div>
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+
+                    {/* ── CTA SECTIONS ── */}
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Send className="h-4 w-4" /> CTA Sections
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <Label className="text-xs font-medium">Primary CTA (bottom of page)</Label>
+                          <div className="grid grid-cols-2 gap-3">
+                            <Input value={settings.cta1_title || ''} onChange={(e) => setSettings(prev => ({ ...prev, cta1_title: e.target.value }))} placeholder="Ready to Upgrade Your Medical Equipment?" />
+                            <Input value={settings.cta1_btn || ''} onChange={(e) => setSettings(prev => ({ ...prev, cta1_btn: e.target.value }))} placeholder="Get a Free Consultation" />
+                          </div>
+                          <Textarea value={settings.cta1_desc || ''} onChange={(e) => setSettings(prev => ({ ...prev, cta1_desc: e.target.value }))} rows={2} placeholder="Whether you're buying, selling..." />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs font-medium">Secondary CTA (sell equipment)</Label>
+                          <div className="grid grid-cols-2 gap-3">
+                            <Input value={settings.cta2_title || ''} onChange={(e) => setSettings(prev => ({ ...prev, cta2_title: e.target.value }))} placeholder="Have Old Equipment to Sell?" />
+                            <Input value={settings.cta2_btn || ''} onChange={(e) => setSettings(prev => ({ ...prev, cta2_btn: e.target.value }))} placeholder="Get Your Offer Now" />
+                          </div>
+                          <Textarea value={settings.cta2_desc || ''} onChange={(e) => setSettings(prev => ({ ...prev, cta2_desc: e.target.value }))} rows={2} placeholder="We buy used, broken..." />
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* ── INDIVIDUAL PAGE EDITORS ── */}
                     {[
-                      { key: 'home', label: 'Home Page', description: 'Main landing page content and hero text' },
-                      { key: 'sell-equipment', label: 'Sell Your Equipment', description: 'Equipment selling program details' },
-                      { key: 'about', label: 'About Us', description: 'Company information and team details' },
-                      { key: 'reviews', label: 'Reviews', description: 'Customer testimonials and review settings' },
-                      { key: 'contact', label: 'Contact', description: 'Contact information and form settings' },
+                      { key: 'home', label: 'Home Page', desc: 'Main landing page content and hero text' },
+                      { key: 'sell-equipment', label: 'Sell Your Equipment', desc: 'Equipment selling program details' },
+                      { key: 'about', label: 'About Us', desc: 'Company information and team details' },
+                      { key: 'reviews', label: 'Reviews', desc: 'Customer testimonials and review settings' },
+                      { key: 'contact', label: 'Contact', desc: 'Contact information and form settings' },
                     ].map((page) => (
                       <Card key={page.key}>
-                        <CardHeader className="pb-3">
-                          <CardTitle className="text-base font-semibold">{page.label}</CardTitle>
-                          <p className="text-xs text-muted-foreground">{page.description}</p>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm font-semibold">{page.label}</CardTitle>
+                          <p className="text-xs text-muted-foreground">{page.desc}</p>
                         </CardHeader>
                         <CardContent className="space-y-3">
                           <div>
                             <Label className="text-xs">Page Title</Label>
-                            <Input
-                              value={settings[`${page.key}_title`] || ''}
-                              onChange={(e) => setSettings(prev => ({ ...prev, [`${page.key}_title`]: e.target.value }))}
-                              placeholder={`Title for ${page.label}`}
-                              className="mt-1"
-                            />
+                            <Input value={settings[`${page.key}_title`] || ''} onChange={(e) => setSettings(prev => ({ ...prev, [`${page.key}_title`]: e.target.value }))} placeholder={`Title for ${page.label}`} />
                           </div>
                           <div>
-                            <Label className="text-xs">Page Content (Markdown supported)</Label>
-                            <Textarea
-                              value={settings[`${page.key}_content`] || ''}
-                              onChange={(e) => setSettings(prev => ({ ...prev, [`${page.key}_content`]: e.target.value }))}
-                              placeholder={`Content for ${page.label} page...`}
-                              rows={4}
-                              className="mt-1"
-                            />
+                            <Label className="text-xs">Page Content (Markdown)</Label>
+                            <Textarea value={settings[`${page.key}_content`] || ''} onChange={(e) => setSettings(prev => ({ ...prev, [`${page.key}_content`]: e.target.value }))} placeholder={`Content for ${page.label}...`} rows={4} />
                           </div>
                         </CardContent>
                       </Card>
                     ))}
+
+                    {/* ── TRUST BAR ── */}
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Check className="h-4 w-4" /> Trust Bar (Top of Page)
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div>
+                          <Label className="text-xs">Trust Bar Items (one per line, format: IconName|Text)</Label>
+                          <Textarea value={settings.trust_bar_items || ''} onChange={(e) => setSettings(prev => ({ ...prev, trust_bar_items: e.target.value }))} rows={4} placeholder={"ShieldCheck|FDA Certified Equipment\nTruck|Free Shipping Available\nClock|24/7 Technical Support"} />
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
-                  <Button onClick={handleSaveSettings} className="bg-accent text-accent-foreground">
+
+                  <Button onClick={handleSaveSettings} className="bg-accent text-accent-foreground" size="lg">
                     <Save className="mr-2 h-4 w-4" />
-                    Save All Page Content
+                    Save All Changes
                   </Button>
                 </div>
               )}
@@ -2351,6 +2566,72 @@ export default function AdminPage() {
                   e.target.value = '';
                 }}
               />
+            </div>
+            {/* Additional Images Gallery */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Additional Images</Label>
+              <div className="flex flex-wrap gap-2">
+                {(() => {
+                  try {
+                    const imgs = JSON.parse(productForm.images || '[]') as string[];
+                    return imgs.map((img, idx) => (
+                      <div key={idx} className="relative group">
+                        <img src={img} alt={`Product ${idx + 1}`} className="h-20 w-20 object-cover rounded-lg border" />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(idx)}
+                          className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-red-500 text-white flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ));
+                  } catch { return null; }
+                })()}
+              </div>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="multi-image-input"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => { if (e.target.files) handleMultiImageUpload(e.target.files); e.target.value = ''; }}
+                />
+                <Button type="button" variant="outline" size="sm" onClick={() => (document.getElementById('multi-image-input') as HTMLInputElement)?.click()}>
+                  <Upload className="mr-1.5 h-3.5 w-3.5" />
+                  Add Images
+                </Button>
+                <span className="text-xs text-muted-foreground">Select multiple images</span>
+              </div>
+            </div>
+            {/* Videos Section */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Demo Videos</Label>
+                <Button type="button" variant="outline" size="sm" onClick={addVideoUrl}>
+                  <Plus className="mr-1.5 h-3.5 w-3.5" />
+                  Add Video
+                </Button>
+              </div>
+              {(() => {
+                try {
+                  const vids = JSON.parse(productForm.videos || '[]') as string[];
+                  return vids.map((vid, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <Input
+                        value={vid}
+                        onChange={(e) => updateVideoUrl(idx, e.target.value)}
+                        placeholder="YouTube or video URL (https://...)"
+                        className="flex-1"
+                      />
+                      <Button type="button" variant="ghost" size="icon" onClick={() => removeVideo(idx)}>
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
+                  ));
+                } catch { return null; }
+              })()}
             </div>
             <div className="space-y-2">
               <Label>Description</Label>
