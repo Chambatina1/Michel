@@ -148,7 +148,41 @@ const CATEGORY_ICONS: Record<string, React.ElementType> = {
   'X-Ray': HeartPulse,
   Ultrasound: Stethoscope,
   Ophthalmology: ShieldCheck,
+  Mammography: ShieldCheck,
+  'C-Arm': MonitorSmartphone,
+  DXA: Activity,
+  OCT: ShieldCheck,
+  'Retinal Camera': Camera,
+  'Visual Field': Grid3X3,
+  Refractometers: Ruler,
+  Examination: Search,
+  'O-Arm': MonitorSmartphone,
 };
+
+/* ── Category → Real Product Image Mapping ── */
+const CATEGORY_IMAGES: Record<string, string[]> = {
+  CT: ['/images/products/ge-revolution-ct.jpg', '/images/products/siemens-somatom-ct.jpg', '/images/products/toshiba-aquilion-ct.jpg'],
+  MRI: ['/images/products/siemens-magnetom-mri.jpg', '/images/products/philips-ambition-mri.jpg', '/images/products/hitachi-echelon-mri.jpg', '/images/products/toshiba-vantage-mri.jpg'],
+  'X-Ray': ['/images/products/carestream-xray.jpg', '/images/products/shimadzu-xray.jpg', '/images/products/fujifilm-xray.jpg', '/images/products/ge-optima-xray.jpg'],
+  Ultrasound: ['/images/products/philips-iu-elite.jpg', '/images/products/canon-aplio-ultrasound.jpg', '/images/products/ge-logiq-e10.jpg', '/images/products/ge-vivid-e95.jpg', '/images/products/mindray-dc80.jpg'],
+  Mammography: ['/images/products/hologic-mammography.jpg'],
+  'C-Arm': ['/images/products/philips-carm.jpg'],
+  DXA: ['/images/products/hologic-dxa.jpg'],
+  OCT: ['/images/products/zeiss-cirrus-oct.jpg', '/images/products/topcon-maestro-oct.jpg', '/images/products/heidelberg-spectralis-oct.jpg', '/images/products/nidek-oct.jpg'],
+  'Retinal Camera': ['/images/products/topcon-retinal-camera.jpg', '/images/products/haufe-visucam.jpg'],
+  'Visual Field': ['/images/products/oculus-visual-field.jpg'],
+  Refractometers: ['/images/products/zeiss-iolmaster.jpg', '/images/products/canon-refractometer.jpg'],
+  Examination: ['/images/products/haag-streit-slitlamp.jpg'],
+  'O-Arm': ['/images/products/philips-carm.jpg'],
+  Ophthalmology: ['/images/products/zeiss-cirrus-oct.jpg', '/images/products/topcon-maestro-oct.jpg'],
+};
+
+function getCategoryImage(category: string, productName: string): string {
+  const images = CATEGORY_IMAGES[category];
+  if (!images) return '/images/products/ge-revolution-ct.jpg';
+  const index = Math.abs(productName.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)) % images.length;
+  return images[index];
+}
 
 const formatPrice = (price: number | null) => {
   if (price === null) return 'Request Quote';
@@ -266,6 +300,10 @@ export default function ProductDetailPage() {
   const specsEntries = Object.entries(product.specs || {});
   const allImages = product.images && product.images.length > 0 ? product.images : [product.imageUrl];
   const [mainImage, setMainImage] = useState(allImages[0] || product.imageUrl);
+  // Use category image as fallback when product has no real image
+  const resolvedMainImage = (!mainImage || mainImage.includes('placeholder')) 
+    ? getCategoryImage(product.category, product.name) 
+    : mainImage;
 
   return (
     <>
@@ -317,11 +355,7 @@ export default function ProductDetailPage() {
               <div className="space-y-3">
                 {/* Main Image */}
                 <div className="relative flex h-72 sm:h-80 lg:h-[440px] items-center justify-center rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 overflow-hidden">
-                  {mainImage && mainImage !== '/images/placeholder-equipment.svg' ? (
-                    <img src={mainImage} alt={product.name} className="h-full w-full object-contain p-4" />
-                  ) : (
-                    <IconComponent className="h-24 w-24 sm:h-32 sm:w-32 text-slate-300 dark:text-slate-600" />
-                  )}
+                  <img src={resolvedMainImage} alt={product.name} className="h-full w-full object-contain p-4" />
                   {product.isFeatured && (
                     <div className="absolute top-4 left-4">
                       <Badge className="bg-teal-600 text-white hover:bg-teal-700 gap-1 px-3 py-1">
@@ -568,12 +602,14 @@ export default function ProductDetailPage() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {relatedProducts.map((rp) => {
-                  const RelIcon = CATEGORY_ICONS[rp.category] || MonitorSmartphone;
+                  const rpImage = (!rp.imageUrl || rp.imageUrl.includes('placeholder')) 
+                    ? getCategoryImage(rp.category, rp.name) 
+                    : rp.imageUrl;
                   return (
                     <Card key={rp.id} className="group overflow-hidden transition-all hover:shadow-lg hover:border-teal-600/30">
                       <Link href={`/catalog/${rp.slug}`}>
-                        <div className="flex h-36 items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900">
-                          <RelIcon className="h-12 w-12 text-slate-400 dark:text-slate-600" />
+                        <div className="flex h-36 items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 overflow-hidden">
+                          <img src={rpImage} alt={rp.name} className="h-full w-full object-cover" />
                         </div>
                       </Link>
                       <CardContent className="p-4">

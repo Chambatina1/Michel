@@ -91,7 +91,33 @@ const CATEGORY_ICONS: Record<string, React.ElementType> = {
   'Visual Field': Grid3X3,
   Refractometers: Ruler,
   Examination: Search,
+  'O-Arm': MonitorSmartphone,
 };
+
+/* ── Category → Real Product Image Mapping ── */
+const CATEGORY_IMAGES: Record<string, string[]> = {
+  CT: ['/images/products/ge-revolution-ct.jpg', '/images/products/siemens-somatom-ct.jpg', '/images/products/toshiba-aquilion-ct.jpg'],
+  MRI: ['/images/products/siemens-magnetom-mri.jpg', '/images/products/philips-ambition-mri.jpg', '/images/products/hitachi-echelon-mri.jpg', '/images/products/toshiba-vantage-mri.jpg'],
+  'X-Ray': ['/images/products/carestream-xray.jpg', '/images/products/shimadzu-xray.jpg', '/images/products/fujifilm-xray.jpg', '/images/products/ge-optima-xray.jpg'],
+  Ultrasound: ['/images/products/philips-iu-elite.jpg', '/images/products/canon-aplio-ultrasound.jpg', '/images/products/ge-logiq-e10.jpg', '/images/products/ge-vivid-e95.jpg', '/images/products/mindray-dc80.jpg'],
+  Mammography: ['/images/products/hologic-mammography.jpg'],
+  'C-Arm': ['/images/products/philips-carm.jpg'],
+  DXA: ['/images/products/hologic-dxa.jpg'],
+  OCT: ['/images/products/zeiss-cirrus-oct.jpg', '/images/products/topcon-maestro-oct.jpg', '/images/products/heidelberg-spectralis-oct.jpg', '/images/products/nidek-oct.jpg'],
+  'Retinal Camera': ['/images/products/topcon-retinal-camera.jpg', '/images/products/haufe-visucam.jpg'],
+  'Visual Field': ['/images/products/oculus-visual-field.jpg'],
+  Refractometers: ['/images/products/zeiss-iolmaster.jpg', '/images/products/canon-refractometer.jpg'],
+  Examination: ['/images/products/haag-streit-slitlamp.jpg'],
+  'O-Arm': ['/images/products/philips-carm.jpg'],
+};
+
+function getCategoryImage(category: string, productName: string): string {
+  const images = CATEGORY_IMAGES[category];
+  if (!images) return '/images/products/ge-revolution-ct.jpg';
+  // Use product name to deterministically pick an image from the array
+  const index = Math.abs(productName.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)) % images.length;
+  return images[index];
+}
 
 const formatPrice = (price: number | null) => {
   if (price === null) return 'Request Quote';
@@ -178,21 +204,19 @@ function QuickBuyButton({ productId }: { productId: string }) {
 function ProductCard({ product }: { product: Product }) {
   const IconComponent = CATEGORY_ICONS[product.category] || MonitorSmartphone;
   const hasRealImage = product.imageUrl && !product.imageUrl.includes('placeholder');
+  // Always show a real image: use category image as fallback for placeholder
+  const displayImage = hasRealImage ? product.imageUrl : getCategoryImage(product.category, product.name);
 
   return (
     <motion.div variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true }} transition={{ duration: 0.4 }}>
       <Card className="group h-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-teal-600/30">
         {/* Product Image */}
         <div className="relative flex h-48 items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 overflow-hidden">
-          {hasRealImage ? (
-            <img
-              src={product.imageUrl}
-              alt={product.name}
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-            />
-          ) : (
-            <IconComponent className="h-16 w-16 text-slate-400 dark:text-slate-600 transition-transform group-hover:scale-110" />
-          )}
+          <img
+            src={displayImage}
+            alt={product.name}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
           {product.isFeatured && (
             <div className="absolute top-3 left-3">
               <Badge className="bg-teal-600 text-white hover:bg-teal-700 gap-1">
