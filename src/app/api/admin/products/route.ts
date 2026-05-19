@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, slug, category, condition, price, description, specs, features, imageUrl, images, status, isFeatured, isNegotiable } = body;
+    const { name, slug, category, condition, price, description, specs, features, imageUrl, images, videos, status, isFeatured, isNegotiable, parentCategory, subCategory } = body;
 
     if (!name || !slug || !category || !condition || !description) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -70,9 +70,12 @@ export async function POST(request: NextRequest) {
         features: typeof features === 'string' ? features : JSON.stringify(features || []),
         imageUrl: imageUrl || '/images/placeholder-equipment.svg',
         images: typeof images === 'string' ? images : JSON.stringify(images || []),
+        videos: typeof videos === 'string' ? videos : JSON.stringify(videos || []),
         status: status || 'active',
         isFeatured: isFeatured || false,
         isNegotiable: isNegotiable || false,
+        parentCategory: parentCategory || null,
+        subCategory: subCategory || null,
       },
     });
 

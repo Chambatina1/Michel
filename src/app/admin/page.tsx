@@ -114,6 +114,8 @@ interface Product {
   isFeatured: boolean;
   isNegotiable: boolean;
   imageUrl: string;
+  parentCategory?: string | null;
+  subCategory?: string | null;
   createdAt: string;
 }
 
@@ -277,6 +279,7 @@ export default function AdminPage() {
     name: '', slug: '', category: '', condition: '', price: '', description: '',
     imageUrl: '', images: '[]', videos: '[]', specs: '{}', features: '[]',
     status: 'active', isFeatured: false, isNegotiable: false,
+    parentCategory: '', subCategory: '',
   });
   const [imageUploading, setImageUploading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string>('');
@@ -660,6 +663,8 @@ export default function AdminPage() {
         status: product.status,
         isFeatured: product.isFeatured,
         isNegotiable: product.isNegotiable || false,
+        parentCategory: product.parentCategory || '',
+        subCategory: product.subCategory || '',
       });
     } else {
       setEditingProduct(null);
@@ -667,6 +672,7 @@ export default function AdminPage() {
         name: '', slug: '', category: '', condition: '', price: '', description: '',
         imageUrl: '', images: '[]', videos: '[]', specs: '{}', features: '[]',
         status: 'active', isFeatured: false, isNegotiable: false,
+        parentCategory: '', subCategory: '',
       });
     }
     // Set preview when editing
@@ -813,6 +819,8 @@ export default function AdminPage() {
         videos: productForm.videos,
         specs: productForm.specs,
         features: productForm.features,
+        parentCategory: productForm.parentCategory || null,
+        subCategory: productForm.subCategory || null,
       };
 
       let res;
@@ -823,7 +831,7 @@ export default function AdminPage() {
           body: JSON.stringify(payload),
         });
       } else {
-        res = await fetch('/api/products', {
+        res = await fetch('/api/admin/products', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
@@ -1660,7 +1668,8 @@ export default function AdminPage() {
                           <TableHeader>
                             <TableRow className="bg-gray-50/80">
                               <TableHead className="pl-4">Name</TableHead>
-                              <TableHead>Category</TableHead>
+                              <TableHead>Parent Category</TableHead>
+                              <TableHead>Subcategory</TableHead>
                               <TableHead>Condition</TableHead>
                               <TableHead>Price</TableHead>
                               <TableHead>Status</TableHead>
@@ -1672,7 +1681,8 @@ export default function AdminPage() {
                             {products.map((product) => (
                               <TableRow key={product.id}>
                                 <TableCell className="pl-4 font-medium">{product.name}</TableCell>
-                                <TableCell>{product.category}</TableCell>
+                                <TableCell>{product.parentCategory || product.category || '—'}</TableCell>
+                                <TableCell>{product.subCategory || '—'}</TableCell>
                                 <TableCell>{product.condition}</TableCell>
                                 <TableCell>{product.isNegotiable ? <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200">Negociable</Badge> : (product.price ? `$${product.price.toLocaleString()}` : 'Contacto')}</TableCell>
                                 <TableCell>
@@ -1707,7 +1717,7 @@ export default function AdminPage() {
                             ))}
                             {products.length === 0 && (
                               <TableRow>
-                                <TableCell colSpan={7} className="py-12 text-center text-gray-400">No products found</TableCell>
+                                <TableCell colSpan={9} className="py-12 text-center text-gray-400">No products found</TableCell>
                               </TableRow>
                             )}
                           </TableBody>
@@ -2456,19 +2466,52 @@ export default function AdminPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Category</Label>
-                <Select value={productForm.category} onValueChange={(v) => setProductForm({ ...productForm, category: v })}>
-                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                <Label>Parent Category</Label>
+                <Select value={productForm.parentCategory} onValueChange={(v) => {
+                  setProductForm(prev => ({
+                    ...prev,
+                    parentCategory: v,
+                    subCategory: '',
+                    category: v === 'Parts & Accessories' ? 'Parts & Accessories' : '',
+                  }));
+                }}>
+                  <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="CT Scanner">CT Scanner</SelectItem>
-                    <SelectItem value="MRI">MRI</SelectItem>
-                    <SelectItem value="X-Ray">X-Ray</SelectItem>
-                    <SelectItem value="Ultrasound">Ultrasound</SelectItem>
-                    <SelectItem value="Ophthalmology">Ophthalmology</SelectItem>
+                    <SelectItem value="Imaging Equipment">Imaging Equipment</SelectItem>
+                    <SelectItem value="Ophthalmology Equipment">Ophthalmology Equipment</SelectItem>
                     <SelectItem value="Parts & Accessories">Parts & Accessories</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label>Subcategory</Label>
+                {productForm.parentCategory === 'Imaging Equipment' ? (
+                  <Select value={productForm.subCategory} onValueChange={(v) => setProductForm(prev => ({ ...prev, subCategory: v, category: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select subcategory" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CT">CT</SelectItem>
+                      <SelectItem value="MRI">MRI</SelectItem>
+                      <SelectItem value="X-Ray">X-Ray</SelectItem>
+                      <SelectItem value="Ultrasound">Ultrasound</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : productForm.parentCategory === 'Ophthalmology Equipment' ? (
+                  <Select value={productForm.subCategory} onValueChange={(v) => setProductForm(prev => ({ ...prev, subCategory: v, category: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select subcategory" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="OCT">OCT</SelectItem>
+                      <SelectItem value="Retinal Camera">Retinal Camera</SelectItem>
+                      <SelectItem value="Visual Field">Visual Field</SelectItem>
+                      <SelectItem value="Refractometers">Refractometers</SelectItem>
+                      <SelectItem value="Examination">Examination</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input value={productForm.parentCategory === 'Parts & Accessories' ? 'Parts & Accessories' : ''} disabled placeholder="Select parent first" />
+                )}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Condition</Label>
                 <Select value={productForm.condition} onValueChange={(v) => setProductForm({ ...productForm, condition: v })}>
@@ -2636,6 +2679,14 @@ export default function AdminPage() {
             <div className="space-y-2">
               <Label>Description</Label>
               <Textarea value={productForm.description} onChange={(e) => setProductForm({ ...productForm, description: e.target.value })} placeholder="Product description..." rows={4} />
+            </div>
+            <div className="space-y-2">
+              <Label>Specifications (JSON)</Label>
+              <Textarea value={productForm.specs} onChange={(e) => setProductForm({ ...productForm, specs: e.target.value })} placeholder='{"key": "value", ...}' rows={3} />
+            </div>
+            <div className="space-y-2">
+              <Label>Features (JSON array)</Label>
+              <Textarea value={productForm.features} onChange={(e) => setProductForm({ ...productForm, features: e.target.value })} placeholder='["Feature 1", "Feature 2", ...]' rows={3} />
             </div>
             <div className="flex items-center gap-3">
               <Switch checked={productForm.isFeatured} onCheckedChange={(v) => setProductForm({ ...productForm, isFeatured: v })} />

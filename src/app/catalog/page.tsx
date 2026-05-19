@@ -55,6 +55,9 @@ interface Product {
   isFeatured: boolean;
   status: string;
   imageUrl: string;
+  images?: string;
+  parentCategory?: string | null;
+  subCategory?: string | null;
 }
 
 /* ── Constants ── */
@@ -171,13 +174,22 @@ function QuickBuyButton({ productId }: { productId: string }) {
 /* ── Product Card ── */
 function ProductCard({ product }: { product: Product }) {
   const IconComponent = CATEGORY_ICONS[product.category] || MonitorSmartphone;
+  const hasRealImage = product.imageUrl && !product.imageUrl.includes('placeholder');
 
   return (
     <motion.div variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true }} transition={{ duration: 0.4 }}>
       <Card className="group h-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-teal-600/30">
-        {/* Image Placeholder */}
-        <div className="relative flex h-48 items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900">
-          <IconComponent className="h-16 w-16 text-slate-400 dark:text-slate-600 transition-transform group-hover:scale-110" />
+        {/* Product Image */}
+        <div className="relative flex h-48 items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 overflow-hidden">
+          {hasRealImage ? (
+            <img
+              src={product.imageUrl}
+              alt={product.name}
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+          ) : (
+            <IconComponent className="h-16 w-16 text-slate-400 dark:text-slate-600 transition-transform group-hover:scale-110" />
+          )}
           {product.isFeatured && (
             <div className="absolute top-3 left-3">
               <Badge className="bg-teal-600 text-white hover:bg-teal-700 gap-1">
