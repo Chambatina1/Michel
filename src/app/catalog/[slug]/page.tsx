@@ -20,6 +20,10 @@ import {
   Package,
   CreditCard,
   Loader2,
+  Camera,
+  Grid3X3,
+  Ruler,
+  Search,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
