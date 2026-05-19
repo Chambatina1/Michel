@@ -47,21 +47,22 @@ export function Navbar() {
       {/* Glass / blur background */}
       <div className="absolute inset-0 bg-background/80 backdrop-blur-xl border-b border-border/50" />
 
-      <div className="relative mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="relative mx-auto flex h-28 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-3 group">
           <Image
             src="/images/logo.jpeg"
             alt="P&S Medical Device Inc."
-            width={70}
-            height={70}
-            className="rounded-full object-cover transition-transform group-hover:scale-105 shadow-sm"
+            width={120}
+            height={120}
+            className="rounded-xl object-contain transition-transform group-hover:scale-105 shadow-lg border-2 border-white/20"
             priority
           />
           <div>
-            <span className="text-lg font-bold leading-tight tracking-tight text-primary">
+            <span className="text-xl font-bold leading-tight tracking-tight text-primary">
               P&S Medical Device Inc.
             </span>
+            <span className="block text-xs text-muted-foreground">Medical Imaging &amp; Ophthalmology Equipment</span>
           </div>
         </Link>
 
@@ -118,9 +119,9 @@ export function Navbar() {
                 <Image
                   src="/images/logo.jpeg"
                   alt="P&S Medical Device Inc."
-                  width={50}
-                  height={50}
-                  className="rounded-full object-cover shadow-sm"
+                  width={80}
+                  height={80}
+                  className="rounded-lg object-contain shadow-md"
                 />
                 P&S Medical Device Inc.
               </SheetTitle>

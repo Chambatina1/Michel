@@ -57,6 +57,7 @@ import {
   ToggleLeft,
   ToggleRight,
   Wrench,
+  FolderTree,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -230,6 +231,7 @@ const navItems = [
   { id: 'sell-requests', label: 'Ventas', icon: ShoppingBag },
   { id: 'reviews', label: 'Resenas', icon: Star },
   { id: 'services', label: 'Servicios', icon: Wrench },
+  { id: 'categories', label: 'Categorias', icon: FolderTree },
   { id: 'users', label: 'Usuarios', icon: Users },
   { id: 'blog', label: 'Blog', icon: Newspaper },
   { id: 'pages', label: 'Paginas', icon: Globe },
@@ -330,6 +332,14 @@ export default function AdminPage() {
     coverImage: '', features: '', ctaText: 'Learn More', ctaLink: '/contact',
     sortOrder: 0, isPublished: true, isFeatured: false,
   });
+
+  // Categories state
+  const [categories, setCategories] = useState<any[]>([]);
+  const [catDialogOpen, setCatDialogOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<any>(null);
+  const [categoryForm, setCategoryForm] = useState({ name: '', subcategories: '' });
+  const [subCatDialogOpen, setSubCatDialogOpen] = useState(false);
+  const [subCatForm, setSubCatForm] = useState({ parentCategory: '', name: '' });
 
   // Payment Gateways state
   const [paymentConfigs, setPaymentConfigs] = useState<Record<string, PaymentConfigData>>({});
@@ -519,6 +529,14 @@ export default function AdminPage() {
     } catch { toast.error('Error al cargar servicios'); }
   }, []);
 
+  const fetchCategories = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/categories');
+      const data = await res.json();
+      if (res.ok) setCategories(data.categories || []);
+    } catch { toast.error('Error al cargar categorias'); }
+  }, []);
+
   const fetchPages = useCallback(async () => {
     try {
       const res = await fetch('/api/settings');
@@ -575,7 +593,8 @@ export default function AdminPage() {
     if (activeTab === 'blog') fetchBlogPosts();
     if (activeTab === 'pages') fetchPages();
     if (activeTab === 'services') fetchServices();
-  }, [isAuthenticated, fetchDashboardData, fetchUsers, fetchSettings, fetchPaymentConfigs, activeTab, fetchAiKnowledge, fetchOrders, fetchBlogPosts, fetchServices, fetchPages]);
+    if (activeTab === 'categories') fetchCategories();
+  }, [isAuthenticated, fetchDashboardData, fetchUsers, fetchSettings, fetchPaymentConfigs, activeTab, fetchAiKnowledge, fetchOrders, fetchBlogPosts, fetchServices, fetchPages, fetchCategories]);
 
   /* ─── AI Knowledge actions ─── */
   const openKnowledgeDialog = (entry?: AiKnowledge) => {
@@ -907,6 +926,8 @@ export default function AdminPage() {
         res = await fetch(`/api/admin/blog/${deleteTarget.id}`, { method: 'DELETE' });
       } else if (deleteTarget.type === 'service') {
         res = await fetch(`/api/services/${deleteTarget.id}`, { method: 'DELETE' });
+      } else if (deleteTarget.type === 'category') {
+        res = await fetch(`/api/admin/categories/${deleteTarget.id}`, { method: 'DELETE' });
       }
 
       if (res && res.ok) {
@@ -915,6 +936,7 @@ export default function AdminPage() {
         fetchUsers();
         fetchBlogPosts();
         fetchServices();
+        fetchCategories();
       } else {
         toast.error('Failed to delete');
       }
@@ -1243,6 +1265,52 @@ export default function AdminPage() {
       if (res.ok) { toast.success('Servicio eliminado'); fetchServices(); }
       else toast.error('Error al eliminar');
     } catch { toast.error('Error al eliminar'); }
+  };
+
+  /* ─── Category actions ─── */
+  const handleCategorySubmit = async () => {
+    try {
+      let res;
+      if (editingCategory) {
+        res = await fetch(`/api/admin/categories/${editingCategory.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(categoryForm),
+        });
+      } else {
+        res = await fetch('/api/admin/categories', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(categoryForm),
+        });
+      }
+      if (res.ok) { toast.success(editingCategory ? 'Categoria actualizada' : 'Categoria creada'); setCatDialogOpen(false); fetchCategories(); }
+      else { const d = await res.json(); toast.error(d.error || 'Error'); }
+    } catch { toast.error('Error al guardar'); }
+  };
+
+  const handleSubCatSubmit = async () => {
+    try {
+      const res = await fetch('/api/admin/categories/subcategory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(subCatForm),
+      });
+      if (res.ok) { toast.success('Subcategoria agregada'); setSubCatDialogOpen(false); fetchCategories(); }
+      else { const d = await res.json(); toast.error(d.error || 'Error'); }
+    } catch { toast.error('Error'); }
+  };
+
+  const removeSubcategory = async (catId: string, subName: string) => {
+    try {
+      const res = await fetch(`/api/admin/categories/${catId}/subcategory`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subcategory: subName }),
+      });
+      if (res.ok) { toast.success('Subcategoria eliminada'); fetchCategories(); }
+      else toast.error('Error');
+    } catch { toast.error('Error'); }
   };
 
   const toggleServicePublish = async (service: any) => {
@@ -2440,6 +2508,63 @@ export default function AdminPage() {
                   <Button onClick={handleSaveSettings} className="gap-2 bg-teal-600 hover:bg-teal-700"><Save className="h-4 w-4" />Guardar Configuracion</Button>
                 </div>
               )}
+
+              {/* ─── CATEGORIES TAB ─── */}
+              {activeTab === 'categories' && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">Categorias y Subcategorias</h3>
+                      <p className="text-sm text-gray-500">Administra las categorias de equipos</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={() => { setEditingCategory(null); setCategoryForm({ name: '', subcategories: '' }); setCatDialogOpen(true); }} className="gap-2 bg-teal-600 hover:bg-teal-700">
+                        <Plus className="h-4 w-4" /> Add Category
+                      </Button>
+                      <Button onClick={() => { setSubCatForm({ parentCategory: '', name: '' }); setSubCatDialogOpen(true); }} variant="outline" className="gap-2">
+                        <Plus className="h-4 w-4" /> Add Subcategory
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Categories Grid */}
+                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {categories.map((cat: any) => (
+                      <Card key={cat.id} className="border-0 shadow-sm">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-base font-semibold">{cat.name}</CardTitle>
+                            <div className="flex gap-1">
+                              <Button size="icon" variant="ghost" onClick={() => { setEditingCategory(cat); setCategoryForm({ name: cat.name, subcategories: cat.subcategories || '' }); setCatDialogOpen(true); }}>
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button size="icon" variant="ghost" onClick={() => confirmDelete('category', cat.id, cat.name)}>
+                                <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          {cat.subcategoriesList && cat.subcategoriesList.length > 0 ? (
+                            <div className="space-y-1">
+                              {cat.subcategoriesList.map((sub: string, idx: number) => (
+                                <div key={idx} className="flex items-center justify-between rounded-md bg-gray-50 px-3 py-2">
+                                  <span className="text-sm text-gray-700">{sub}</span>
+                                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => removeSubcategory(cat.id, sub)}>
+                                    <X className="h-3 w-3 text-red-400" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-400 italic">No subcategories</p>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           )}
         </main>
@@ -3573,6 +3698,59 @@ export default function AdminPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Category Dialog */}
+      <Dialog open={catDialogOpen} onOpenChange={setCatDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingCategory ? 'Edit Category' : 'Add New Category'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Category Name</Label>
+              <Input value={categoryForm.name} onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })} placeholder="e.g. Imaging Equipment" />
+            </div>
+            <div className="space-y-2">
+              <Label>Subcategories (comma-separated)</Label>
+              <Textarea value={categoryForm.subcategories} onChange={(e) => setCategoryForm({ ...categoryForm, subcategories: e.target.value })} placeholder="CT, MRI, X-Ray, Ultrasound" rows={3} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCatDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleCategorySubmit} className="bg-teal-600 hover:bg-teal-700">{editingCategory ? 'Update' : 'Create'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Subcategory Dialog */}
+      <Dialog open={subCatDialogOpen} onOpenChange={setSubCatDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Subcategory</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Parent Category</Label>
+              <Select value={subCatForm.parentCategory} onValueChange={(v) => setSubCatForm({ ...subCatForm, parentCategory: v })}>
+                <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                <SelectContent>
+                  {categories.map((cat: any) => (
+                    <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Subcategory Name</Label>
+              <Input value={subCatForm.name} onChange={(e) => setSubCatForm({ ...subCatForm, name: e.target.value })} placeholder="e.g. CT" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSubCatDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSubCatSubmit} className="bg-teal-600 hover:bg-teal-700">Add Subcategory</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

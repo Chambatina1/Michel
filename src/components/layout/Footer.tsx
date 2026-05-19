@@ -47,14 +47,15 @@ export function Footer() {
               <Image
                 src="/images/logo.jpeg"
                 alt="P&S Medical Device Inc."
-                width={65}
-                height={65}
-                className="rounded-full object-cover transition-transform group-hover:scale-105 brightness-0 invert shadow-sm"
+                width={100}
+                height={100}
+                className="rounded-xl object-contain transition-transform group-hover:scale-105 shadow-md border-2 border-white/10"
               />
               <div>
                 <span className="text-lg font-bold leading-tight tracking-tight text-white">
                   P&S Medical Device Inc.
                 </span>
+                <span className="block text-xs text-white/50">Medical Imaging &amp; Ophthalmology Equipment</span>
               </div>
             </Link>
             <p className="text-sm leading-relaxed text-primary-foreground/70 max-w-xs">

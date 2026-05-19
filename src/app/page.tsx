@@ -52,7 +52,7 @@ export default function HomePage() {
             <Button
               asChild
               size="lg"
-              className="min-w-[180px] bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg"
+              className="min-w-[180px] bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg whitespace-nowrap"
             >
               <Link href="/catalog">
                 Browse Equipment
@@ -63,7 +63,7 @@ export default function HomePage() {
               asChild
               variant="outline"
               size="lg"
-              className="min-w-[180px] border-white/30 bg-transparent text-white hover:bg-white/10 hover:text-white"
+              className="min-w-[180px] border-white/30 bg-transparent text-white hover:bg-white/10 hover:text-white whitespace-nowrap"
             >
               <Link href="/sell-equipment">Sell Your Equipment</Link>
             </Button>
@@ -113,7 +113,7 @@ export default function HomePage() {
                     </Link>
                   ))}
                 </div>
-                <Button asChild variant="outline" className="mt-4 w-full">
+                <Button asChild variant="outline" className="mt-4 w-full whitespace-nowrap">
                   <Link href="/catalog?parentCategory=Imaging">
                     View All Imaging Equipment
                     <ArrowRight className="ml-2 h-4 w-4" />
@@ -153,7 +153,7 @@ export default function HomePage() {
                     </Link>
                   ))}
                 </div>
-                <Button asChild variant="outline" className="mt-4 w-full">
+                <Button asChild variant="outline" className="mt-4 w-full whitespace-nowrap">
                   <Link href="/catalog?parentCategory=Ophthalmology">
                     View All Ophthalmology Equipment
                     <ArrowRight className="ml-2 h-4 w-4" />
