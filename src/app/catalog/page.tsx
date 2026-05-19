@@ -64,7 +64,7 @@ interface Product {
 const MAIN_CATEGORIES = [
   {
     name: 'Imaging Equipment',
-    subcategories: ['CT', 'MRI', 'X-Ray', 'Ultrasound'],
+    subcategories: ['CT', 'MRI', 'X-Ray', 'Ultrasound', 'Mammography', 'C-Arm', 'DXA'],
   },
   {
     name: 'Ophthalmology Equipment',
@@ -83,6 +83,9 @@ const CATEGORY_ICONS: Record<string, React.ElementType> = {
   MRI: Activity,
   'X-Ray': HeartPulse,
   Ultrasound: Stethoscope,
+  Mammography: ShieldCheck,
+  'C-Arm': MonitorSmartphone,
+  DXA: Activity,
   OCT: ShieldCheck,
   'Retinal Camera': Camera,
   'Visual Field': Grid3X3,

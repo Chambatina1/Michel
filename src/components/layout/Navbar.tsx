@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Sheet,
   SheetContent,
@@ -47,22 +46,22 @@ export function Navbar() {
       {/* Glass / blur background */}
       <div className="absolute inset-0 bg-background/80 backdrop-blur-xl border-b border-border/50" />
 
-      <div className="relative mx-auto flex h-28 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="relative mx-auto flex h-24 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-3 group">
+        <Link href="/" className="flex items-center gap-3 group shrink-0">
           <Image
             src="/images/logo.jpeg"
             alt="P&S Medical Device Inc."
-            width={120}
-            height={120}
+            width={80}
+            height={80}
             className="rounded-xl object-contain transition-transform group-hover:scale-105 shadow-lg border-2 border-white/20"
             priority
           />
-          <div>
-            <span className="text-xl font-bold leading-tight tracking-tight text-primary">
-              P&S Medical Device Inc.
+          <div className="min-w-0">
+            <span className="block text-lg sm:text-xl lg:text-2xl font-extrabold leading-tight tracking-tight text-primary whitespace-nowrap">
+              P&S MEDICAL DEVICE INC.
             </span>
-            <span className="block text-xs text-muted-foreground">Medical Imaging &amp; Ophthalmology Equipment</span>
+            <span className="hidden sm:block text-xs text-muted-foreground whitespace-nowrap">Medical Imaging &amp; Ophthalmology Equipment</span>
           </div>
         </Link>
 
@@ -79,14 +78,7 @@ export function Navbar() {
                   : "text-muted-foreground hover:text-foreground hover:bg-secondary"
               )}
             >
-              <span className="flex items-center gap-1.5">
-                {link.label}
-                {link.highlight && (
-                  <Badge className="bg-accent text-accent-foreground text-[10px] px-1.5 py-0 hover:bg-accent/90">
-                    Cash
-                  </Badge>
-                )}
-              </span>
+              <span className="whitespace-nowrap">{link.label}{link.highlight && ' — Cash'}</span>
               {isActive(link.href) && (
                 <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-5 rounded-full bg-accent" />
               )}
@@ -139,14 +131,7 @@ export function Navbar() {
                         : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                     )}
                   >
-                    <span className="flex items-center gap-2">
-                      {link.label}
-                      {link.highlight && (
-                        <Badge className="bg-accent text-accent-foreground text-[10px] px-1.5 py-0">
-                          Cash
-                        </Badge>
-                      )}
-                    </span>
+                    <span className="whitespace-nowrap">{link.label}{link.highlight && ' — Cash'}</span>
                     {isActive(link.href) && (
                       <span className="h-1.5 w-1.5 rounded-full bg-accent" />
                     )}
