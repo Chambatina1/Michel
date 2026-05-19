@@ -230,6 +230,7 @@ const navItems = [
   { id: 'services', label: 'Servicios', icon: Wrench },
   { id: 'users', label: 'Usuarios', icon: Users },
   { id: 'blog', label: 'Blog', icon: Newspaper },
+  { id: 'pages', label: 'Paginas', icon: Globe },
   { id: 'ai-training', label: 'IA Entrenamiento', icon: Brain },
   { id: 'settings', label: 'Configuracion', icon: Settings },
 ];
@@ -514,6 +515,25 @@ export default function AdminPage() {
     } catch { toast.error('Error al cargar servicios'); }
   }, []);
 
+  const fetchPages = useCallback(async () => {
+    try {
+      const res = await fetch('/api/settings');
+      const data = await res.json();
+      if (res.ok) {
+        const s = data.settings || {};
+        setSettings(prev => {
+          const updated = { ...prev };
+          const pageNames = ['home', 'sell-equipment', 'about', 'reviews', 'contact'];
+          pageNames.forEach(name => {
+            if (updated[`${name}_title`] === undefined) updated[`${name}_title`] = s[`${name}_title`] || '';
+            if (updated[`${name}_content`] === undefined) updated[`${name}_content`] = s[`${name}_content`] || '';
+          });
+          return updated;
+        });
+      }
+    } catch { toast.error('Error al cargar paginas'); }
+  }, []);
+
   const savePaymentConfig = async (gateway: string, config: Record<string, string | boolean>, isActive: boolean) => {
     setSavingPaymentConfig(true);
     try {
@@ -549,8 +569,9 @@ export default function AdminPage() {
     if (activeTab === 'ai-training') fetchAiKnowledge();
     if (activeTab === 'orders') fetchOrders();
     if (activeTab === 'blog') fetchBlogPosts();
+    if (activeTab === 'pages') fetchPages();
     if (activeTab === 'services') fetchServices();
-  }, [isAuthenticated, fetchDashboardData, fetchUsers, fetchSettings, fetchPaymentConfigs, activeTab, fetchAiKnowledge, fetchOrders, fetchBlogPosts, fetchServices]);
+  }, [isAuthenticated, fetchDashboardData, fetchUsers, fetchSettings, fetchPaymentConfigs, activeTab, fetchAiKnowledge, fetchOrders, fetchBlogPosts, fetchServices, fetchPages]);
 
   /* ─── AI Knowledge actions ─── */
   const openKnowledgeDialog = (entry?: AiKnowledge) => {
@@ -2097,6 +2118,59 @@ export default function AdminPage() {
                       </div>
                     </CardContent>
                   </Card>
+                </div>
+              )}
+
+              {/* ─── PAGES TAB ─── */}
+              {activeTab === 'pages' && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-xl font-bold text-foreground">Page Content Management</h2>
+                      <p className="text-sm text-muted-foreground">Edit the content displayed on your website pages</p>
+                    </div>
+                  </div>
+                  <div className="grid gap-4">
+                    {[
+                      { key: 'home', label: 'Home Page', description: 'Main landing page content and hero text' },
+                      { key: 'sell-equipment', label: 'Sell Your Equipment', description: 'Equipment selling program details' },
+                      { key: 'about', label: 'About Us', description: 'Company information and team details' },
+                      { key: 'reviews', label: 'Reviews', description: 'Customer testimonials and review settings' },
+                      { key: 'contact', label: 'Contact', description: 'Contact information and form settings' },
+                    ].map((page) => (
+                      <Card key={page.key}>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base font-semibold">{page.label}</CardTitle>
+                          <p className="text-xs text-muted-foreground">{page.description}</p>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div>
+                            <Label className="text-xs">Page Title</Label>
+                            <Input
+                              value={settings[`${page.key}_title`] || ''}
+                              onChange={(e) => setSettings(prev => ({ ...prev, [`${page.key}_title`]: e.target.value }))}
+                              placeholder={`Title for ${page.label}`}
+                              className="mt-1"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Page Content (Markdown supported)</Label>
+                            <Textarea
+                              value={settings[`${page.key}_content`] || ''}
+                              onChange={(e) => setSettings(prev => ({ ...prev, [`${page.key}_content`]: e.target.value }))}
+                              placeholder={`Content for ${page.label} page...`}
+                              rows={4}
+                              className="mt-1"
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                  <Button onClick={handleSaveSettings} className="bg-accent text-accent-foreground">
+                    <Save className="mr-2 h-4 w-4" />
+                    Save All Page Content
+                  </Button>
                 </div>
               )}
 

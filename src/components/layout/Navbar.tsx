@@ -25,6 +25,7 @@ const navLinks = [
     href: "/sell-equipment",
     highlight: true,
   },
+  { label: "Parts & Accessories", href: "/parts-accessories" },
   { label: "Services", href: "/services" },
   { label: "Blog", href: "/blog" },
   { label: "About", href: "/about" },

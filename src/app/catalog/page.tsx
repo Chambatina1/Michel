@@ -17,6 +17,9 @@ import {
   Activity,
   CreditCard,
   Loader2,
+  Camera,
+  Grid3X3,
+  Ruler,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -55,7 +58,21 @@ interface Product {
 }
 
 /* ── Constants ── */
-const CATEGORIES = ['CT', 'MRI', 'X-Ray', 'Ultrasound', 'Ophthalmology'] as const;
+const MAIN_CATEGORIES = [
+  {
+    name: 'Imaging Equipment',
+    subcategories: ['CT', 'MRI', 'X-Ray', 'Ultrasound'],
+  },
+  {
+    name: 'Ophthalmology Equipment',
+    subcategories: ['OCT', 'Retinal Camera', 'Visual Field', 'Refractometers', 'Examination'],
+  },
+] as const;
+
+const ALL_SUBCATEGORIES = [
+  ...MAIN_CATEGORIES[0].subcategories,
+  ...MAIN_CATEGORIES[1].subcategories,
+];
 const CONDITIONS = ['New', 'Refurbished'] as const;
 
 const CATEGORY_ICONS: Record<string, React.ElementType> = {
@@ -63,7 +80,11 @@ const CATEGORY_ICONS: Record<string, React.ElementType> = {
   MRI: Activity,
   'X-Ray': HeartPulse,
   Ultrasound: Stethoscope,
-  Ophthalmology: ShieldCheck,
+  OCT: ShieldCheck,
+  'Retinal Camera': Camera,
+  'Visual Field': Grid3X3,
+  Refractometers: Ruler,
+  Examination: Search,
 };
 
 const formatPrice = (price: number | null) => {
@@ -269,18 +290,25 @@ function FilterContent({
       {/* Categories */}
       <div>
         <h4 className="text-sm font-medium text-foreground mb-3">Category</h4>
-        <div className="space-y-2.5">
-          {CATEGORIES.map((cat) => (
-            <label key={cat} className="flex items-center gap-2.5 cursor-pointer group">
-              <Checkbox
-                checked={selectedCategories.includes(cat)}
-                onCheckedChange={() => onCategoryChange(cat)}
-                className="border-slate-300 data-[state=checked]:bg-teal-600 data-[state=checked]:border-teal-600"
-              />
-              <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
-                {cat === 'X-Ray' ? 'X-Ray' : cat}
-              </span>
-            </label>
+        <div className="space-y-4">
+          {MAIN_CATEGORIES.map((mainCat) => (
+            <div key={mainCat.name}>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{mainCat.name}</p>
+              <div className="space-y-2.5">
+                {mainCat.subcategories.map((sub) => (
+                  <label key={sub} className="flex items-center gap-2.5 cursor-pointer group">
+                    <Checkbox
+                      checked={selectedCategories.includes(sub)}
+                      onCheckedChange={() => onCategoryChange(sub)}
+                      className="border-slate-300 data-[state=checked]:bg-teal-600 data-[state=checked]:border-teal-600"
+                    />
+                    <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+                      {sub}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </div>

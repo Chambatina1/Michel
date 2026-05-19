@@ -98,6 +98,9 @@ async function handleCheckoutComplete(session: any) {
         metadata: JSON.stringify({
           paymentIntent: session.payment_intent,
           customer: session.customer,
+          shippingType: session.metadata?.shippingType,
+          shippingAddress: session.shipping_details?.address,
+          shippingOption: session.shipping_options?.[0]?.shipping_rate,
         }),
       },
     });

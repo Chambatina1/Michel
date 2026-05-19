@@ -21,6 +21,7 @@ export async function createCheckoutSession(params: {
   customerEmail?: string;
   successUrl: string;
   cancelUrl: string;
+  shippingType?: 'standard' | 'freight';
 }) {
   const {
     productName,
@@ -30,34 +31,99 @@ export async function createCheckoutSession(params: {
     customerEmail,
     successUrl,
     cancelUrl,
+    shippingType = 'standard',
   } = params;
 
-  const session = await stripe.checkout.sessions.create({
+  const sessionParams: Stripe.Checkout.SessionCreateParams = {
     payment_method_types: ['card'],
     mode: 'payment',
     line_items: [
       {
         price_data: {
           currency,
-          unit_amount: priceInCents, // amount in cents
+          unit_amount: priceInCents,
           product_data: {
             name: productName,
-            metadata: {
-              productId,
-            },
+            metadata: { productId },
           },
         },
         quantity: 1,
       },
     ],
-    metadata: {
-      productId,
-    },
+    metadata: { productId, shippingType },
     customer_email: customerEmail,
     success_url: successUrl,
     cancel_url: cancelUrl,
-  });
+    shipping_address_collection: {
+      allowed_countries: ['US', 'CA', 'MX'],
+    },
+  };
 
+  if (shippingType === 'standard') {
+    sessionParams.shipping_options = [
+      {
+        shipping_rate_data: {
+          type: 'fixed_amount',
+          fixed_amount: { amount: 0, currency },
+          display_name: 'Free Pickup',
+          delivery_estimate: {
+            minimum: { unit: 'day', value: 1 },
+            maximum: { unit: 'day', value: 3 },
+          },
+        },
+      },
+      {
+        shipping_rate_data: {
+          type: 'fixed_amount',
+          fixed_amount: { amount: 4999, currency },
+          display_name: 'UPS Ground',
+          delivery_estimate: {
+            minimum: { unit: 'business_day', value: 5 },
+            maximum: { unit: 'business_day', value: 7 },
+          },
+        },
+      },
+      {
+        shipping_rate_data: {
+          type: 'fixed_amount',
+          fixed_amount: { amount: 7999, currency },
+          display_name: 'USPS Priority',
+          delivery_estimate: {
+            minimum: { unit: 'business_day', value: 2 },
+            maximum: { unit: 'business_day', value: 4 },
+          },
+        },
+      },
+      {
+        shipping_rate_data: {
+          type: 'fixed_amount',
+          fixed_amount: { amount: 9999, currency },
+          display_name: 'FedEx Express',
+          delivery_estimate: {
+            minimum: { unit: 'business_day', value: 1 },
+            maximum: { unit: 'business_day', value: 3 },
+          },
+        },
+      },
+    ];
+  } else {
+    // Freight shipping for large equipment
+    sessionParams.shipping_options = [
+      {
+        shipping_rate_data: {
+          type: 'fixed_amount',
+          fixed_amount: { amount: 0, currency },
+          display_name: 'Freight Shipping - Quote Required',
+          delivery_estimate: {
+            minimum: { unit: 'day', value: 7 },
+            maximum: { unit: 'day', value: 21 },
+          },
+        },
+      },
+    ];
+  }
+
+  const session = await stripe.checkout.sessions.create(sessionParams);
   return session;
 }
 

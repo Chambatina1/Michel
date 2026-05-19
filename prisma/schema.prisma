@@ -34,6 +34,10 @@ model Product {
   status      String   @default("active") // active, sold, reserved
   isFeatured   Boolean  @default(false)
   isNegotiable Boolean  @default(false) // price is negotiable / request quote
+  weight       Float?    // weight in lbs for shipping calculation
+  requiresFreight Boolean @default(false) // whether item needs freight shipping
+  parentCategory String?  // Imaging Equipment, Ophthalmology Equipment
+  subCategory  String?   // CT, MRI, OCT, etc.
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }

@@ -7,7 +7,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_APP
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { productId, customerEmail } = body;
+    const { productId, customerEmail, shippingType } = body;
 
     if (!productId) {
       return NextResponse.json(
@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
       productId: product.id,
       priceInCents,
       customerEmail: customerEmail || undefined,
+      shippingType: shippingType || 'standard',
       successUrl: `${BASE_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${BASE_URL}/checkout/cancel?product=${product.slug}`,
     });

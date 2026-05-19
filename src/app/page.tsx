@@ -11,10 +11,15 @@ import {
   ShieldCheck,
   TrendingUp,
   HeartPulse,
+  Activity,
+  Eye,
+  Camera,
+  Grid3X3,
+  Ruler,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export default function HomePage() {
   return (
@@ -22,15 +27,20 @@ export default function HomePage() {
       {/* Trust Bar */}
       <TrustBar />
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-primary hero-overlay">
+      {/* Hero Section with Banner Image */}
+      <section className="relative overflow-hidden min-h-[520px]">
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: "url('/images/hero-banner.jpg')" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/90 via-primary/70 to-primary/50" />
         <div className="relative mx-auto flex min-h-[520px] max-w-7xl flex-col items-center justify-center px-4 py-20 text-center sm:px-6 sm:py-28 lg:px-8">
           <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
             <HeartPulse className="h-3.5 w-3.5" />
             Trusted by 500+ Healthcare Facilities
           </span>
           <h1 className="max-w-3xl text-3xl font-bold tracking-tight text-white sm:text-4xl md:text-5xl lg:text-6xl">
-            Premium Medical Imaging
+            Medical Imaging & Ophthalmology
             <br />
             <span className="text-accent">Equipment You Can Trust</span>
           </h1>
@@ -61,7 +71,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Equipment Categories */}
+      {/* Equipment Categories - Two Main Categories */}
       <section className="py-16 sm:py-20 lg:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
@@ -69,84 +79,104 @@ export default function HomePage() {
               Our Equipment Categories
             </h2>
             <p className="mt-3 text-base text-muted-foreground sm:text-lg">
-              Browse our comprehensive inventory of certified medical devices
+              Browse our comprehensive inventory organized by specialty
             </p>
           </div>
-          <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              {
-                icon: MonitorSmartphone,
-                title: "CT Scanners",
-                count: "12+ Models",
-                description:
-                  "Multi-slice and single-slice CT scanners from leading manufacturers.",
-              },
-              {
-                icon: Stethoscope,
-                title: "MRI Machines",
-                count: "8+ Models",
-                description:
-                  "Open and closed MRI systems with various field strengths.",
-              },
-              {
-                icon: HeartPulse,
-                title: "X-Ray Systems",
-                count: "15+ Models",
-                description:
-                  "Digital radiography, fluoroscopy, and portable X-ray units.",
-              },
-              {
-                icon: MonitorSmartphone,
-                title: "Ultrasound",
-                count: "10+ Models",
-                description:
-                  "Diagnostic, vascular, and point-of-care ultrasound systems.",
-              },
-              {
-                icon: ShieldCheck,
-                title: "Ophthalmology",
-                count: "6+ Models",
-                description:
-                  "OCT, fundus cameras, slit lamps, and diagnostic equipment.",
-              },
-              {
-                icon: Wrench,
-                title: "Parts & Accessories",
-                count: "100+ Items",
-                description:
-                  "Replacement parts, coils, detectors, and accessories.",
-              },
-            ].map((cat) => (
-              <Card
-                key={cat.title}
-                className="group cursor-pointer transition-all hover:shadow-lg hover:border-accent/30"
-              >
-                <CardContent className="flex items-start gap-4 p-6">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/5 text-primary transition-colors group-hover:bg-accent/10 group-hover:text-accent">
-                    <cat.icon className="h-6 w-6" />
+          <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2">
+            {/* Imaging Equipment */}
+            <Card className="group overflow-hidden border-2 transition-all hover:shadow-xl hover:border-accent/30">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5 pb-2">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-accent/10 text-accent">
+                    <MonitorSmartphone className="h-6 w-6" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground">
-                      {cat.title}
-                    </h3>
-                    <span className="text-xs font-medium text-accent">
-                      {cat.count}
-                    </span>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {cat.description}
-                    </p>
+                    <h3 className="text-xl font-bold text-foreground">Imaging Equipment</h3>
+                    <p className="text-sm text-muted-foreground">Medical imaging systems and modalities</p>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
+                </div>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { name: 'CT Scanners', href: '/catalog?category=CT', icon: Activity, count: '12+ Models' },
+                    { name: 'MRI', href: '/catalog?category=MRI', icon: Stethoscope, count: '8+ Models' },
+                    { name: 'X-Ray', href: '/catalog?category=X-Ray', icon: HeartPulse, count: '15+ Models' },
+                    { name: 'Ultrasound', href: '/catalog?category=Ultrasound', icon: MonitorSmartphone, count: '10+ Models' },
+                  ].map((sub) => (
+                    <Link key={sub.name} href={sub.href} className="flex items-center gap-2.5 rounded-lg border border-border/50 p-3 transition-all hover:bg-accent/5 hover:border-accent/20">
+                      <sub.icon className="h-4 w-4 text-muted-foreground group-hover:text-accent" />
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{sub.name}</p>
+                        <p className="text-xs text-muted-foreground">{sub.count}</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+                <Button asChild variant="outline" className="mt-4 w-full">
+                  <Link href="/catalog?parentCategory=Imaging">
+                    View All Imaging Equipment
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Ophthalmology Equipment */}
+            <Card className="group overflow-hidden border-2 transition-all hover:shadow-xl hover:border-accent/30">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5 pb-2">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-accent/10 text-accent">
+                    <ShieldCheck className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-foreground">Ophthalmology Equipment</h3>
+                    <p className="text-sm text-muted-foreground">Eye care and diagnostic devices</p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { name: 'OCT', href: '/catalog?category=OCT', icon: Eye, count: '6+ Models' },
+                    { name: 'Retinal Camera', href: '/catalog?category=Retinal+Camera', icon: Camera, count: '5+ Models' },
+                    { name: 'Visual Field', href: '/catalog?category=Visual+Field', icon: Grid3X3, count: '4+ Models' },
+                    { name: 'Refractometers', href: '/catalog?category=Refractometers', icon: Ruler, count: '7+ Models' },
+                    { name: 'Examination', href: '/catalog?category=Examination', icon: Search, count: '10+ Models' },
+                  ].map((sub) => (
+                    <Link key={sub.name} href={sub.href} className="flex items-center gap-2.5 rounded-lg border border-border/50 p-3 transition-all hover:bg-accent/5 hover:border-accent/20">
+                      <sub.icon className="h-4 w-4 text-muted-foreground group-hover:text-accent" />
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{sub.name}</p>
+                        <p className="text-xs text-muted-foreground">{sub.count}</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+                <Button asChild variant="outline" className="mt-4 w-full">
+                  <Link href="/catalog?parentCategory=Ophthalmology">
+                    View All Ophthalmology Equipment
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
           </div>
-          <div className="mt-10 text-center">
-            <Button asChild variant="outline" size="lg">
-              <Link href="/catalog">
-                View All Equipment
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
+          
+          {/* Parts & Accessories CTA */}
+          <div className="mt-8 text-center">
+            <Link href="/parts-accessories" className="inline-flex">
+              <Card className="inline-flex items-center gap-4 px-8 py-4 cursor-pointer transition-all hover:shadow-lg hover:border-accent/30">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10 text-accent">
+                  <Wrench className="h-5 w-5" />
+                </div>
+                <div className="text-left">
+                  <p className="font-semibold text-foreground">Parts & Accessories</p>
+                  <p className="text-sm text-muted-foreground">100+ replacement parts, coils, detectors, and accessories</p>
+                </div>
+                <ArrowRight className="h-5 w-5 text-muted-foreground ml-4" />
+              </Card>
+            </Link>
           </div>
         </div>
       </section>

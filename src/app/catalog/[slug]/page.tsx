@@ -44,44 +44,84 @@ import {
 import { LeadForm } from '@/components/layout/LeadForm';
 
 /* ── Buy Now Button Component ── */
-function BuyNowButton({ productId, productName }: { productId: string; productName: string }) {
+function BuyNowButton({ productId, productName, isLargeEquipment }: { productId: string; productName: string; isLargeEquipment?: boolean }) {
   const [loading, setLoading] = useState(false);
+  const [showShippingDialog, setShowShippingDialog] = useState(false);
+  const [shippingType, setShippingType] = useState<'standard' | 'freight'>('standard');
 
   const handleBuyNow = async () => {
+    // For large equipment, show shipping dialog first
+    if (isLargeEquipment) {
+      setShowShippingDialog(true);
+      return;
+    }
+    proceedToCheckout('standard');
+  };
+
+  const proceedToCheckout = async (type: 'standard' | 'freight') => {
     setLoading(true);
+    setShowShippingDialog(false);
     try {
       const res = await fetch('/api/payments/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId }),
+        body: JSON.stringify({ productId, shippingType: type }),
       });
       const data = await res.json();
       if (res.ok && data.url) {
         window.location.href = data.url;
       } else {
-        alert(data.error || 'Could not initiate payment. Please try requesting a quote.');
+        alert(data.error || 'Could not initiate payment.');
         setLoading(false);
       }
     } catch {
-      alert('Connection error. Please try again or contact us.');
+      alert('Connection error.');
       setLoading(false);
     }
   };
 
   return (
-    <Button
-      size="lg"
-      className="bg-indigo-600 hover:bg-indigo-700 text-white min-w-[160px]"
-      onClick={handleBuyNow}
-      disabled={loading}
-    >
-      {loading ? (
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-      ) : (
-        <CreditCard className="mr-2 h-4 w-4" />
-      )}
-      {loading ? 'Processing...' : 'Buy Now'}
-    </Button>
+    <>
+      <Button
+        size="lg"
+        className="bg-indigo-600 hover:bg-indigo-700 text-white min-w-[160px]"
+        onClick={handleBuyNow}
+        disabled={loading}
+      >
+        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
+        {loading ? 'Processing...' : 'Buy Now'}
+      </Button>
+
+      <Dialog open={showShippingDialog} onOpenChange={setShowShippingDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Choose Shipping Method</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <label className="flex items-start gap-3 p-3 rounded-lg border cursor-pointer hover:bg-accent/5 transition-colors" onClick={() => setShippingType('standard')}>
+              <input type="radio" name="shipping" checked={shippingType === 'standard'} readOnly className="mt-1" />
+              <div>
+                <p className="font-medium text-sm">Standard Shipping (UPS / USPS / FedEx)</p>
+                <p className="text-xs text-muted-foreground">Calculated at checkout based on destination. Available for smaller equipment and parts.</p>
+              </div>
+            </label>
+            <label className="flex items-start gap-3 p-3 rounded-lg border cursor-pointer hover:bg-accent/5 transition-colors" onClick={() => setShippingType('freight')}>
+              <input type="radio" name="shipping" checked={shippingType === 'freight'} readOnly className="mt-1" />
+              <div>
+                <p className="font-medium text-sm">Freight Shipping</p>
+                <p className="text-xs text-muted-foreground">Required for large equipment (CT, MRI). A custom quote will be provided after purchase.</p>
+              </div>
+            </label>
+          </div>
+          <div className="flex gap-3 mt-4">
+            <Button variant="outline" onClick={() => setShowShippingDialog(false)}>Cancel</Button>
+            <Button onClick={() => proceedToCheckout(shippingType)} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+              Continue to Payment
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -319,7 +359,7 @@ export default function ProductDetailPage() {
               {/* CTAs */}
               <div className="flex flex-wrap gap-3 mb-6">
                 {product.price && product.price > 0 && (
-                  <BuyNowButton productId={product.id} productName={product.name} />
+                  <BuyNowButton productId={product.id} productName={product.name} isLargeEquipment={['CT', 'MRI', 'X-Ray'].includes(product.category)} />
                 )}
                 <Dialog>
                   <DialogTrigger asChild>
