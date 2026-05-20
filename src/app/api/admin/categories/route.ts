@@ -37,31 +37,30 @@ const DEFAULT_CATEGORIES = [
 // and merge any missing categories/subcategories into the category list
 async function syncCategoriesFromProducts(categories: any[]): Promise<any[]> {
   try {
-    // Get distinct parentCategories and subCategories from products
-    const productCategories = await db.product.findMany({
-      select: {
-        parentCategory: true,
-        subCategory: true,
-        category: true,
-      },
-      distinct: ['parentCategory', 'subCategory'],
+    // Get unique parentCategories from products
+    const parentGroups = await db.product.groupBy({
+      by: ['parentCategory'],
+      where: { parentCategory: { not: null } },
     });
 
-    if (!productCategories || productCategories.length === 0) return categories;
+    if (!parentGroups || parentGroups.length === 0) return categories;
 
-    for (const prod of productCategories) {
-      const parentName = prod.parentCategory?.trim();
-      const subName = prod.subCategory?.trim() || prod.category?.trim();
-
+    for (const pg of parentGroups) {
+      const parentName = pg.parentCategory?.trim();
       if (!parentName) continue;
 
-      // Find or create parent category
+      // Get unique subCategories for this parentCategory
+      const subGroups = await db.product.groupBy({
+        by: ['subCategory'],
+        where: { parentCategory: parentName, subCategory: { not: null, not: '' } },
+      });
+
+      // Find or create parent category in list
       let catIndex = categories.findIndex((c: any) =>
         c.name.toLowerCase() === parentName.toLowerCase()
       );
 
       if (catIndex === -1) {
-        // Create new parent category
         const newCat = {
           id: parentName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
           name: parentName,
@@ -72,13 +71,22 @@ async function syncCategoriesFromProducts(categories: any[]): Promise<any[]> {
         catIndex = categories.length - 1;
       }
 
-      // Add subcategory if missing
-      if (subName && categories[catIndex].subcategoriesList) {
+      // Ensure subcategoriesList exists
+      if (!categories[catIndex].subcategoriesList) {
+        categories[catIndex].subcategoriesList = [];
+      }
+
+      // Add each subcategory if missing
+      for (const sg of subGroups) {
+        const subName = sg.subCategory?.trim();
+        if (!subName) continue;
         if (!categories[catIndex].subcategoriesList.some((s: string) => s.toLowerCase() === subName.toLowerCase())) {
           categories[catIndex].subcategoriesList.push(subName);
-          categories[catIndex].subcategories = categories[catIndex].subcategoriesList.join(', ');
         }
       }
+
+      // Update subcategories string
+      categories[catIndex].subcategories = categories[catIndex].subcategoriesList.join(', ');
     }
 
     return categories;
@@ -100,7 +108,6 @@ export async function GET() {
 
     // Always auto-sync from products to catch any new categories
     const synced = await syncCategoriesFromProducts([...categories]);
-    let changed = false;
 
     // Check if sync added new categories or subcategories
     if (JSON.stringify(synced) !== JSON.stringify(categories)) {
