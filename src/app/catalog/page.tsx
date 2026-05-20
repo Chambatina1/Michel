@@ -448,6 +448,7 @@ function CatalogContent() {
         'Imaging': ['CT', 'MRI', 'X-Ray', 'Ultrasound', 'Mammography', 'C-Arm', 'DXA'],
         'Imaging Equipment': ['CT', 'MRI', 'X-Ray', 'Ultrasound', 'Mammography', 'C-Arm', 'DXA'],
       };
+      // If the API already filtered by parentCategory, use the mapping for checkboxes
       const cats = mapping[parentCat];
       if (cats) {
         setSelectedCategories(cats);

@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     const where: Record<string, unknown> = { status };
 
     if (category) where.category = category;
-    if (parentCategory) where.parentCategory = parentCategory;
+    if (parentCategory) where.parentCategory = { contains: parentCategory };
     if (condition) where.condition = condition;
     if (featured === 'true') where.isFeatured = true;
     if (search) {

@@ -114,7 +114,7 @@ export default function HomePage() {
                   ))}
                 </div>
                 <Button asChild variant="outline" className="mt-4 w-full whitespace-nowrap">
-                  <Link href="/catalog?parentCategory=Imaging">
+                  <Link href="/catalog?parentCategory=Imaging+Equipment">
                     View All Imaging Equipment
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
@@ -154,7 +154,7 @@ export default function HomePage() {
                   ))}
                 </div>
                 <Button asChild variant="outline" className="mt-4 w-full whitespace-nowrap">
-                  <Link href="/catalog?parentCategory=Ophthalmology">
+                  <Link href="/catalog?parentCategory=Ophthalmology+Equipment">
                     View All Ophthalmology Equipment
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
