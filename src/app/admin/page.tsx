@@ -310,6 +310,10 @@ export default function AdminPage() {
   });
   const [imageUploading, setImageUploading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string>('');
+  const [customParentMode, setCustomParentMode] = useState(false);
+  const [customParentValue, setCustomParentValue] = useState('');
+  const [customSubMode, setCustomSubMode] = useState(false);
+  const [customSubValue, setCustomSubValue] = useState('');
 
   // User form
   const [userForm, setUserForm] = useState({ name: '', email: '', role: 'user' });
@@ -737,6 +741,10 @@ export default function AdminPage() {
     }
     // Ensure categories are loaded before opening the product dialog
     if (categories.length === 0) fetchCategories();
+    setCustomParentMode(false);
+    setCustomParentValue('');
+    setCustomSubMode(false);
+    setCustomSubValue('');
     setProductDialogOpen(true);
   };
 
@@ -879,6 +887,45 @@ export default function AdminPage() {
         subCategory: productForm.subCategory || null,
       };
 
+      // If a new custom parent category was entered, add it to categories list
+      if (customParentMode && customParentValue.trim()) {
+        try {
+          const catRes = await fetch('/api/admin/categories', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: customParentValue.trim(), subcategories: '' }),
+          });
+          if (catRes.ok) {
+            console.log('New parent category created:', customParentValue.trim());
+          }
+        } catch { /* non-blocking */ }
+      }
+
+      // If a new custom subcategory was entered, add it to the parent category
+      if (customSubMode && customSubValue.trim() && payload.parentCategory) {
+        try {
+          const catRes = await fetch('/api/admin/categories');
+          const catData = await catRes.json();
+          const allCats = catData.categories || [];
+          const parentCat = allCats.find((c: any) => c.name === payload.parentCategory);
+          if (parentCat) {
+            const updatedSubs = [...(parentCat.subcategoriesList || []), customSubValue.trim()];
+            const updatedCat = {
+              ...parentCat,
+              subcategories: updatedSubs.join(', '),
+              subcategoriesList: updatedSubs,
+            };
+            // Use sync endpoint to update - add the new subcategory via products
+            // Instead, call the categories PUT to update
+            await fetch('/api/admin/categories', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ categoryId: parentCat.id, category: updatedCat }),
+            });
+          }
+        } catch { /* non-blocking */ }
+      }
+
       let res;
       if (editingProduct) {
         res = await fetch(`/api/admin/products/${editingProduct.id}`, {
@@ -898,6 +945,7 @@ export default function AdminPage() {
         toast.success(editingProduct ? 'Product updated' : 'Product created');
         setProductDialogOpen(false);
         fetchDashboardData();
+        fetchCategories(); // Refresh categories to include any newly added ones
       } else {
         const data = await res.json();
         toast.error(data.error || 'Operation failed');
@@ -3023,55 +3071,103 @@ export default function AdminPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Parent Category</Label>
-                <Select value={productForm.parentCategory} onValueChange={(v) => {
-                  setProductForm(prev => ({
-                    ...prev,
-                    parentCategory: v,
-                    subCategory: '',
-                    category: '',
-                  }));
-                }}>
-                  <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
-                  <SelectContent>
-                    {categories.map((cat: any) => (
-                      <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {!customParentMode ? (
+                  <Select value={productForm.parentCategory} onValueChange={(v) => {
+                    if (v === '__new__') {
+                      setCustomParentMode(true);
+                      setCustomParentValue('');
+                      setProductForm(prev => ({ ...prev, parentCategory: '', subCategory: '', category: '' }));
+                    } else {
+                      setProductForm(prev => ({ ...prev, parentCategory: v, subCategory: '', category: '' }));
+                      setCustomSubMode(false);
+                      setCustomSubValue('');
+                    }
+                  }}>
+                    <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                    <SelectContent>
+                      {categories.map((cat: any) => (
+                        <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                      ))}
+                      <SelectItem value="__new__" className="text-teal-600 font-semibold border-t border-gray-200 mt-1">+ Nueva categoria...</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="flex gap-2">
+                    <Input
+                      value={customParentValue}
+                      onChange={(e) => {
+                        setCustomParentValue(e.target.value);
+                        setProductForm(prev => ({ ...prev, parentCategory: e.target.value, subCategory: '', category: '' }));
+                      }}
+                      placeholder="Escriba nueva categoria..."
+                      autoFocus
+                    />
+                    <Button type="button" variant="ghost" size="icon" className="shrink-0" onClick={() => {
+                      setCustomParentMode(false);
+                      setCustomParentValue('');
+                      setProductForm(prev => ({ ...prev, parentCategory: '', subCategory: '', category: '' }));
+                    }}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Subcategory</Label>
                 {(() => {
-                  const selectedCat = categories.find((c: any) => c.name === productForm.parentCategory);
-                  // Try subcategoriesList first; fall back to parsing the comma-separated subcategories string
+                  const effectiveParent = customParentMode ? customParentValue : productForm.parentCategory;
+                  const selectedCat = categories.find((c: any) => c.name === effectiveParent);
                   const subs: string[] = Array.isArray(selectedCat?.subcategoriesList) && selectedCat.subcategoriesList.length > 0
                     ? selectedCat.subcategoriesList
                     : (typeof selectedCat?.subcategories === 'string' && selectedCat.subcategories.trim()
                         ? selectedCat.subcategories.split(',').map((s: string) => s.trim()).filter(Boolean)
                         : []);
-                  if (subs.length > 0) {
+                  if (!effectiveParent) {
+                    return <Input disabled placeholder="Select parent first" />;
+                  }
+                  if (!customSubMode && subs.length > 0) {
                     return (
-                      <Select value={productForm.subCategory} onValueChange={(v) => setProductForm(prev => ({ ...prev, subCategory: v, category: v }))}>
+                      <Select value={productForm.subCategory} onValueChange={(v) => {
+                        if (v === '__new__') {
+                          setCustomSubMode(true);
+                          setCustomSubValue('');
+                          setProductForm(prev => ({ ...prev, subCategory: '', category: '' }));
+                        } else {
+                          setProductForm(prev => ({ ...prev, subCategory: v, category: v }));
+                        }
+                      }}>
                         <SelectTrigger><SelectValue placeholder="Select subcategory" /></SelectTrigger>
                         <SelectContent>
                           {subs.map((sub: string) => (
                             <SelectItem key={sub} value={sub}>{sub}</SelectItem>
                           ))}
+                          <SelectItem value="__new__" className="text-teal-600 font-semibold border-t border-gray-200 mt-1">+ Nueva subcategoria...</SelectItem>
                         </SelectContent>
                       </Select>
                     );
                   }
-                  if (productForm.parentCategory) {
-                    // No predefined subcategories – allow the user to type a custom one
-                    return (
+                  return (
+                    <div className="flex gap-2">
                       <Input
-                        value={productForm.subCategory || ''}
-                        onChange={(e) => setProductForm(prev => ({ ...prev, subCategory: e.target.value, category: e.target.value }))}
-                        placeholder="Type a custom subcategory..."
+                        value={customSubMode ? customSubValue : (productForm.subCategory || '')}
+                        onChange={(e) => {
+                          setCustomSubValue(e.target.value);
+                          setProductForm(prev => ({ ...prev, subCategory: e.target.value, category: e.target.value }));
+                        }}
+                        placeholder="Escriba nueva subcategoria..."
+                        autoFocus={customSubMode}
                       />
-                    );
-                  }
-                  return <Input disabled placeholder="Select parent first" />;
+                      {(customSubMode || subs.length > 0) && (
+                        <Button type="button" variant="ghost" size="icon" className="shrink-0" onClick={() => {
+                          setCustomSubMode(false);
+                          setCustomSubValue('');
+                          setProductForm(prev => ({ ...prev, subCategory: '', category: '' }));
+                        }}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  );
                 })()}
               </div>
             </div>

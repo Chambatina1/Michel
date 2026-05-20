@@ -129,6 +129,13 @@ export async function POST(request: NextRequest) {
     if (!name) return NextResponse.json({ error: 'Name is required' }, { status: 400 });
 
     const categories = await getCategories();
+
+    // Check if category already exists (case-insensitive)
+    const exists = categories.some((c: any) => c.name.toLowerCase() === name.toLowerCase());
+    if (exists) {
+      return NextResponse.json({ error: 'Category already exists' }, { status: 409 });
+    }
+
     const newCategory = {
       id: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       name,
@@ -141,5 +148,28 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating category:', error);
     return NextResponse.json({ error: 'Failed to create category' }, { status: 500 });
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { categoryId, category } = body;
+    if (!categoryId || !category) {
+      return NextResponse.json({ error: 'categoryId and category are required' }, { status: 400 });
+    }
+
+    const categories = await getCategories();
+    const index = categories.findIndex((c: any) => c.id === categoryId);
+    if (index === -1) {
+      return NextResponse.json({ error: 'Category not found' }, { status: 404 });
+    }
+
+    categories[index] = category;
+    await saveCategories(categories);
+    return NextResponse.json({ category: categories[index] });
+  } catch (error) {
+    console.error('Error updating category:', error);
+    return NextResponse.json({ error: 'Failed to update category' }, { status: 500 });
   }
 }
