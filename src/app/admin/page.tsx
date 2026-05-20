@@ -628,7 +628,7 @@ export default function AdminPage() {
     if (activeTab === 'blog') fetchBlogPosts();
     if (activeTab === 'pages') fetchPages();
     if (activeTab === 'services') fetchServices();
-    if (activeTab === 'categories') fetchCategories();
+    fetchCategories(); // Always load categories (needed for products tab dropdown)
   }, [isAuthenticated, fetchDashboardData, fetchUsers, fetchSettings, fetchPaymentConfigs, activeTab, fetchAiKnowledge, fetchOrders, fetchBlogPosts, fetchServices, fetchPages, fetchCategories]);
 
   /* ─── AI Knowledge actions ─── */
