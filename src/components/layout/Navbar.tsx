@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,7 @@ import {
   SheetClose,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { useCartStore } from "@/store/cart-store";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -35,6 +36,13 @@ const navLinks = [
 export function Navbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const cartItemCount = useCartStore((s) => s.getItemCount());
+  // Use useSyncExternalStore for hydration-safe mounted detection
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
@@ -90,6 +98,22 @@ export function Navbar() {
         <div className="hidden lg:flex items-center gap-3">
           <Button
             asChild
+            variant="ghost"
+            size="icon"
+            className="relative hover:bg-secondary"
+            aria-label="Shopping cart"
+          >
+            <Link href="/cart">
+              <ShoppingCart className="h-5 w-5" />
+              {mounted && cartItemCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white">
+                  {cartItemCount > 99 ? '99+' : cartItemCount}
+                </span>
+              )}
+            </Link>
+          </Button>
+          <Button
+            asChild
             className="bg-accent text-accent-foreground hover:bg-accent/90 shadow-md hover:shadow-lg transition-all"
           >
             <Link href="/contact?type=quote">
@@ -141,14 +165,31 @@ export function Navbar() {
             </nav>
 
             <div className="mt-auto border-t border-border px-4 py-4">
-              <Button
-                asChild
-                className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-              >
-                <Link href="/contact?type=quote">
-                  Get a Quote
-                </Link>
-              </Button>
+              <div className="flex gap-3">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="relative flex-1"
+                >
+                  <Link href="/cart" className="flex items-center justify-center gap-2">
+                    <ShoppingCart className="h-4 w-4" />
+                    Cart
+                    {mounted && cartItemCount > 0 && (
+                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white">
+                        {cartItemCount > 99 ? '99+' : cartItemCount}
+                      </span>
+                    )}
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90"
+                >
+                  <Link href="/contact?type=quote">
+                    Get a Quote
+                  </Link>
+                </Button>
+              </div>
             </div>
           </SheetContent>
         </Sheet>

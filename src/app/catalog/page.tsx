@@ -20,6 +20,7 @@ import {
   Camera,
   Grid3X3,
   Ruler,
+  ShoppingCart,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -42,6 +43,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { LeadForm } from '@/components/layout/LeadForm';
+import { useCartStore } from '@/store/cart-store';
+import { toast } from 'sonner';
 
 /* ── Types ── */
 interface Product {
@@ -110,6 +113,24 @@ const CATEGORY_IMAGES: Record<string, string[]> = {
   Examination: ['/images/products/haag-streit-slitlamp.jpg'],
   'O-Arm': ['/images/products/philips-carm.jpg'],
 };
+
+const CATEGORY_WEIGHTS: Record<string, number> = {
+  CT: 5000,
+  MRI: 8000,
+  'X-Ray': 3000,
+  Ultrasound: 300,
+  Mammography: 2000,
+  'C-Arm': 1500,
+  DXA: 2000,
+  OCT: 20,
+  'Retinal Camera': 30,
+  'Visual Field': 40,
+  Refractometers: 15,
+  Examination: 25,
+  'O-Arm': 3000,
+};
+
+const FREIGHT_CATEGORIES = ['CT', 'MRI', 'X-Ray'];
 
 function getCategoryImage(category: string, productName: string): string {
   const images = CATEGORY_IMAGES[category];
@@ -266,6 +287,34 @@ function ProductCard({ product }: { product: Product }) {
                 <Eye className="mr-1.5 h-3.5 w-3.5" />
                 View Details
               </Link>
+            </Button>
+            <Button
+              size="sm"
+              className="flex-1 min-w-[120px] bg-teal-600 text-white hover:bg-teal-700"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const hasRealImage = product.imageUrl && !product.imageUrl.includes('placeholder');
+                const displayImg = hasRealImage ? product.imageUrl : getCategoryImage(product.category, product.name);
+                useCartStore.getState().addItem({
+                  id: crypto.randomUUID(),
+                  productId: product.id,
+                  name: product.name,
+                  slug: product.slug,
+                  price: product.price || 0,
+                  imageUrl: displayImg,
+                  category: product.category,
+                  condition: product.condition,
+                  weight: CATEGORY_WEIGHTS[product.category] || 50,
+                  requiresFreight: FREIGHT_CATEGORIES.includes(product.category),
+                });
+                toast.success('Added to cart', {
+                  description: `${product.name} has been added to your cart.`,
+                });
+              }}
+            >
+              <ShoppingCart className="mr-1.5 h-3.5 w-3.5" />
+              Add to Cart
             </Button>
             {product.price && product.price > 0 && (
               <QuickBuyButton productId={product.id} />

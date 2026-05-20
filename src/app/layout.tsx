@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 
@@ -86,6 +87,7 @@ export default function RootLayout({
         <div className="min-h-screen flex flex-col">
           <AdminLayout>{children}</AdminLayout>
         </div>
+        <Toaster position="top-right" richColors />
         <script
           dangerouslySetInnerHTML={{
             __html: `

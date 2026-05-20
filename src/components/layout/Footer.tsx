@@ -24,6 +24,7 @@ const quickLinks = [
 const supportLinks = [
   { label: "Contact Us", href: "/contact" },
   { label: "FAQ", href: "/contact#faq" },
+  { label: "Return Policy", href: "/returns" },
   { label: "Terms of Service", href: "/terms" },
   { label: "Privacy Policy", href: "/privacy" },
 ];

@@ -24,6 +24,7 @@ import {
   Grid3X3,
   Ruler,
   Search,
+  ShoppingCart,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -46,6 +47,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { LeadForm } from '@/components/layout/LeadForm';
+import { useCartStore } from '@/store/cart-store';
+import { toast } from 'sonner';
 
 /* ── Buy Now Button Component ── */
 function BuyNowButton({ productId, productName, isLargeEquipment }: { productId: string; productName: string; isLargeEquipment?: boolean }) {
@@ -180,6 +183,24 @@ const CATEGORY_IMAGES: Record<string, string[]> = {
   'O-Arm': ['/images/products/philips-carm.jpg'],
   Ophthalmology: ['/images/products/zeiss-cirrus-oct.jpg', '/images/products/topcon-maestro-oct.jpg'],
 };
+
+const CATEGORY_WEIGHTS: Record<string, number> = {
+  CT: 5000,
+  MRI: 8000,
+  'X-Ray': 3000,
+  Ultrasound: 300,
+  Mammography: 2000,
+  'C-Arm': 1500,
+  DXA: 2000,
+  OCT: 20,
+  'Retinal Camera': 30,
+  'Visual Field': 40,
+  Refractometers: 15,
+  Examination: 25,
+  'O-Arm': 3000,
+};
+
+const FREIGHT_CATEGORIES = ['CT', 'MRI', 'X-Ray'];
 
 function getCategoryImage(category: string, productName: string): string {
   const images = CATEGORY_IMAGES[category];
@@ -424,6 +445,30 @@ export default function ProductDetailPage() {
                 {product.price && product.price > 0 && (
                   <BuyNowButton productId={product.id} productName={product.name} isLargeEquipment={['CT', 'MRI', 'X-Ray'].includes(product.category)} />
                 )}
+                <Button
+                  size="lg"
+                  className="bg-teal-600 hover:bg-teal-700 text-white min-w-[160px]"
+                  onClick={() => {
+                    useCartStore.getState().addItem({
+                      id: crypto.randomUUID(),
+                      productId: product.id,
+                      name: product.name,
+                      slug: product.slug,
+                      price: product.price || 0,
+                      imageUrl: resolvedMainImage,
+                      category: product.category,
+                      condition: product.condition,
+                      weight: CATEGORY_WEIGHTS[product.category] || 50,
+                      requiresFreight: FREIGHT_CATEGORIES.includes(product.category),
+                    });
+                    toast.success('Added to cart', {
+                      description: `${product.name} has been added to your cart.`,
+                    });
+                  }}
+                >
+                  <ShoppingCart className="mr-2 h-4 w-4" />
+                  Add to Cart
+                </Button>
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button size="lg" className="bg-teal-600 hover:bg-teal-700 text-white min-w-[160px]">
