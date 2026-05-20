@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
   Search,
@@ -425,12 +426,30 @@ function FilterContent({
 
 /* ── Main Page ── */
 export default function CatalogPage() {
+  const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  // Handle parentCategory from URL (e.g., ?parentCategory=Ophthalmology)
+  useEffect(() => {
+    const parentCat = searchParams.get('parentCategory');
+    if (parentCat) {
+      const mapping: Record<string, string[]> = {
+        'Ophthalmology': ['OCT', 'Retinal Camera', 'Visual Field', 'Refractometers', 'Examination'],
+        'Ophthalmology Equipment': ['OCT', 'Retinal Camera', 'Visual Field', 'Refractometers', 'Examination'],
+        'Imaging': ['CT', 'MRI', 'X-Ray', 'Ultrasound', 'Mammography', 'C-Arm', 'DXA'],
+        'Imaging Equipment': ['CT', 'MRI', 'X-Ray', 'Ultrasound', 'Mammography', 'C-Arm', 'DXA'],
+      };
+      const cats = mapping[parentCat];
+      if (cats) {
+        setSelectedCategories(cats);
+      }
+    }
+  }, [searchParams]);
 
   const hasFilters = selectedCategories.length > 0 || selectedConditions.length > 0;
 

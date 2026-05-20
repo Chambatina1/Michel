@@ -286,6 +286,7 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [mainImage, setMainImage] = useState('');
 
   useEffect(() => {
     async function fetchProduct() {
@@ -298,6 +299,15 @@ export default function ProductDetailPage() {
         if (!res.ok) throw new Error('Failed to fetch product');
         const data = await res.json();
         setProduct(data.product);
+
+        // Set main image from product data
+        const imgs = data.product.images && data.product.images.length > 0
+          ? data.product.images : [data.product.imageUrl];
+        if (!imgs[0] || imgs[0].includes('placeholder')) {
+          setMainImage(getCategoryImage(data.product.category, data.product.name));
+        } else {
+          setMainImage(imgs[0]);
+        }
 
         // Fetch related products (same category)
         const relatedRes = await fetch(`/api/products?category=${data.product.category}&limit=4`);
@@ -324,7 +334,6 @@ export default function ProductDetailPage() {
   const IconComponent = CATEGORY_ICONS[product.category] || MonitorSmartphone;
   const specsEntries = Object.entries(product.specs || {});
   const allImages = product.images && product.images.length > 0 ? product.images : [product.imageUrl];
-  const [mainImage, setMainImage] = useState(allImages[0] || product.imageUrl);
   // Use category image as fallback when product has no real image
   const resolvedMainImage = (!mainImage || mainImage.includes('placeholder')) 
     ? getCategoryImage(product.category, product.name) 
