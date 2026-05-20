@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -425,7 +425,7 @@ function FilterContent({
 }
 
 /* ── Main Page ── */
-export default function CatalogPage() {
+function CatalogContent() {
   const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -434,9 +434,10 @@ export default function CatalogPage() {
   const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  // Handle parentCategory from URL (e.g., ?parentCategory=Ophthalmology)
+  // Handle parentCategory and category from URL
   useEffect(() => {
     const parentCat = searchParams.get('parentCategory');
+    const singleCat = searchParams.get('category');
     if (parentCat) {
       const mapping: Record<string, string[]> = {
         'Ophthalmology': ['OCT', 'Retinal Camera', 'Visual Field', 'Refractometers', 'Examination'],
@@ -448,6 +449,9 @@ export default function CatalogPage() {
       if (cats) {
         setSelectedCategories(cats);
       }
+    } else if (singleCat) {
+      // Handle single category from URL (e.g., ?category=OCT, ?category=Retinal+Camera)
+      setSelectedCategories([singleCat]);
     }
   }, [searchParams]);
 
@@ -657,5 +661,27 @@ export default function CatalogPage() {
         </div>
       </section>
     </>
+  );
+}
+
+export default function CatalogPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen">
+        <section className="gradient-primary py-14 sm:py-20">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
+            <div className="h-10 bg-white/20 rounded w-64 mx-auto animate-pulse" />
+            <div className="mt-4 h-6 bg-white/10 rounded w-96 mx-auto animate-pulse" />
+          </div>
+        </section>
+        <section className="py-8 sm:py-12">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <ProductGridSkeleton />
+          </div>
+        </section>
+      </div>
+    }>
+      <CatalogContent />
+    </Suspense>
   );
 }
