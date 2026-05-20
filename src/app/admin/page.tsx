@@ -2710,6 +2710,143 @@ export default function AdminPage() {
                       </CardContent>
                     </Card>
 
+                    {/* ── SERVICES PAGE CONTENT ── */}
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2"><Wrench className="h-4 w-4" /> Services Page Content</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div>
+                          <Label className="text-xs">Page Title</Label>
+                          <Input value={settings.services_page_title || ''} onChange={(e) => setSettings(prev => ({ ...prev, services_page_title: e.target.value }))} placeholder="Our Services" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Page Subtitle</Label>
+                          <Input value={settings.services_page_subtitle || ''} onChange={(e) => setSettings(prev => ({ ...prev, services_page_subtitle: e.target.value }))} placeholder="Comprehensive medical equipment solutions" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Page Description</Label>
+                          <Textarea value={settings.services_page_description || ''} onChange={(e) => setSettings(prev => ({ ...prev, services_page_description: e.target.value }))} rows={3} placeholder="Describe your services offerings..." />
+                        </div>
+                        <div>
+                          <Label className="text-xs">CTA Button Text</Label>
+                          <Input value={settings.services_cta_btn || ''} onChange={(e) => setSettings(prev => ({ ...prev, services_cta_btn: e.target.value }))} placeholder="Get Started" />
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* ── PARTS & ACCESSORIES PAGE ── */}
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2"><Wrench className="h-4 w-4" /> Parts &amp; Accessories Page</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div>
+                          <Label className="text-xs">Page Title</Label>
+                          <Input value={settings.parts_page_title || ''} onChange={(e) => setSettings(prev => ({ ...prev, parts_page_title: e.target.value }))} placeholder="Parts & Accessories" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Page Subtitle</Label>
+                          <Input value={settings.parts_page_subtitle || ''} onChange={(e) => setSettings(prev => ({ ...prev, parts_page_subtitle: e.target.value }))} placeholder="Quality replacement parts for your equipment" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Page Description</Label>
+                          <Textarea value={settings.parts_page_description || ''} onChange={(e) => setSettings(prev => ({ ...prev, parts_page_description: e.target.value }))} rows={3} placeholder="Describe your parts & accessories offerings..." />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Categories List (one per line)</Label>
+                          <Textarea value={settings.parts_categories || ''} onChange={(e) => setSettings(prev => ({ ...prev, parts_categories: e.target.value }))} rows={4} placeholder={"CT Parts\nMRI Coils\nUltrasound Probes\nX-Ray Tubes"} />
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* ── ABOUT PAGE - FULL CONTENT ── */}
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2"><Globe className="h-4 w-4" /> About Page - Full Content</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div>
+                          <Label className="text-xs">Mission Statement</Label>
+                          <Textarea value={settings.about_mission || ''} onChange={(e) => setSettings(prev => ({ ...prev, about_mission: e.target.value }))} rows={3} placeholder="Our mission is to provide..." />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Company Story</Label>
+                          <Textarea value={settings.about_story || ''} onChange={(e) => setSettings(prev => ({ ...prev, about_story: e.target.value }))} rows={4} placeholder="Founded in..." />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Values (one per line)</Label>
+                          <Textarea value={settings.about_values || ''} onChange={(e) => setSettings(prev => ({ ...prev, about_values: e.target.value }))} rows={3} placeholder={"Quality\nIntegrity\nInnovation"} />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Team Section Title</Label>
+                          <Input value={settings.about_team_title || ''} onChange={(e) => setSettings(prev => ({ ...prev, about_team_title: e.target.value }))} placeholder="Meet Our Team" />
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* ── CONTACT PAGE - FULL CONTENT ── */}
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2"><Phone className="h-4 w-4" /> Contact Page - Full Content</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div>
+                          <Label className="text-xs">Page Title</Label>
+                          <Input value={settings.contact_page_title || ''} onChange={(e) => setSettings(prev => ({ ...prev, contact_page_title: e.target.value }))} placeholder="Contact Us" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Page Subtitle</Label>
+                          <Input value={settings.contact_page_subtitle || ''} onChange={(e) => setSettings(prev => ({ ...prev, contact_page_subtitle: e.target.value }))} placeholder="We'd love to hear from you" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Office Address</Label>
+                          <Input value={settings.contact_address || ''} onChange={(e) => setSettings(prev => ({ ...prev, contact_address: e.target.value }))} placeholder="123 Medical Dr, Houston, TX" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Phone Number</Label>
+                          <Input value={settings.contact_phone || ''} onChange={(e) => setSettings(prev => ({ ...prev, contact_phone: e.target.value }))} placeholder="+1 (305) 244-9340" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Email</Label>
+                          <Input value={settings.contact_email || ''} onChange={(e) => setSettings(prev => ({ ...prev, contact_email: e.target.value }))} placeholder="info@psmedicaldevices.com" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Business Hours</Label>
+                          <Textarea value={settings.contact_hours || ''} onChange={(e) => setSettings(prev => ({ ...prev, contact_hours: e.target.value }))} rows={2} placeholder={"Monday - Friday: 8:00 AM - 6:00 PM EST\nSaturday: 9:00 AM - 1:00 PM EST"} />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Google Maps Embed URL</Label>
+                          <Input value={settings.contact_map_url || ''} onChange={(e) => setSettings(prev => ({ ...prev, contact_map_url: e.target.value }))} placeholder="https://www.google.com/maps/embed?..." />
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* ── RETURNS POLICY PAGE ── */}
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2"><Shield className="h-4 w-4" /> Returns Policy Page</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div>
+                          <Label className="text-xs">Page Title</Label>
+                          <Input value={settings.returns_title || ''} onChange={(e) => setSettings(prev => ({ ...prev, returns_title: e.target.value }))} placeholder="Returns & Refund Policy" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Policy Content</Label>
+                          <Textarea value={settings.returns_content || ''} onChange={(e) => setSettings(prev => ({ ...prev, returns_content: e.target.value }))} rows={6} placeholder="Describe your returns policy..." />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Return Window (e.g., &quot;30 days&quot;)</Label>
+                          <Input value={settings.returns_window || ''} onChange={(e) => setSettings(prev => ({ ...prev, returns_window: e.target.value }))} placeholder="30 days" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Contact for Returns</Label>
+                          <Input value={settings.returns_contact || ''} onChange={(e) => setSettings(prev => ({ ...prev, returns_contact: e.target.value }))} placeholder="returns@psmedicaldevices.com" />
+                        </div>
+                      </CardContent>
+                    </Card>
+
                     {/* ── INDIVIDUAL PAGE EDITORS ── */}
                     {[
                       { key: 'home', label: 'Home Page', desc: 'Main landing page content and hero text' },
@@ -2889,43 +3026,39 @@ export default function AdminPage() {
                     ...prev,
                     parentCategory: v,
                     subCategory: '',
-                    category: v === 'Parts & Accessories' ? 'Parts & Accessories' : '',
+                    category: '',
                   }));
                 }}>
                   <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Imaging Equipment">Imaging Equipment</SelectItem>
-                    <SelectItem value="Ophthalmology Equipment">Ophthalmology Equipment</SelectItem>
-                    <SelectItem value="Parts & Accessories">Parts & Accessories</SelectItem>
+                    {categories.map((cat: any) => (
+                      <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Subcategory</Label>
-                {productForm.parentCategory === 'Imaging Equipment' ? (
-                  <Select value={productForm.subCategory} onValueChange={(v) => setProductForm(prev => ({ ...prev, subCategory: v, category: v }))}>
-                    <SelectTrigger><SelectValue placeholder="Select subcategory" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="CT">CT</SelectItem>
-                      <SelectItem value="MRI">MRI</SelectItem>
-                      <SelectItem value="X-Ray">X-Ray</SelectItem>
-                      <SelectItem value="Ultrasound">Ultrasound</SelectItem>
-                    </SelectContent>
-                  </Select>
-                ) : productForm.parentCategory === 'Ophthalmology Equipment' ? (
-                  <Select value={productForm.subCategory} onValueChange={(v) => setProductForm(prev => ({ ...prev, subCategory: v, category: v }))}>
-                    <SelectTrigger><SelectValue placeholder="Select subcategory" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="OCT">OCT</SelectItem>
-                      <SelectItem value="Retinal Camera">Retinal Camera</SelectItem>
-                      <SelectItem value="Visual Field">Visual Field</SelectItem>
-                      <SelectItem value="Refractometers">Refractometers</SelectItem>
-                      <SelectItem value="Examination">Examination</SelectItem>
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Input value={productForm.parentCategory === 'Parts & Accessories' ? 'Parts & Accessories' : ''} disabled placeholder="Select parent first" />
-                )}
+                {(() => {
+                  const selectedCat = categories.find((c: any) => c.name === productForm.parentCategory);
+                  const subs = selectedCat?.subcategoriesList || [];
+                  if (subs.length > 0) {
+                    return (
+                      <Select value={productForm.subCategory} onValueChange={(v) => setProductForm(prev => ({ ...prev, subCategory: v, category: v }))}>
+                        <SelectTrigger><SelectValue placeholder="Select subcategory" /></SelectTrigger>
+                        <SelectContent>
+                          {subs.map((sub: string) => (
+                            <SelectItem key={sub} value={sub}>{sub}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    );
+                  }
+                  if (productForm.parentCategory) {
+                    return <Input value={productForm.parentCategory} disabled placeholder={productForm.parentCategory} />;
+                  }
+                  return <Input disabled placeholder="Select parent first" />;
+                })()}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">

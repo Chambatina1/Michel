@@ -692,10 +692,13 @@ export const FALLBACK_PRODUCTS: FallbackProduct[] = [
 /* ── Filter helper for fallback data ── */
 export function filterFallbackProducts(
   products: FallbackProduct[],
-  opts: { category?: string; condition?: string; search?: string; featured?: string; status: string }
+  opts: { category?: string; condition?: string; search?: string; featured?: string; status: string; parentCategory?: string }
 ) {
   let filtered = products.filter((p) => p.status === opts.status);
 
+  if (opts.parentCategory) {
+    filtered = filtered.filter((p) => p.parentCategory === opts.parentCategory);
+  }
   if (opts.category) {
     filtered = filtered.filter((p) => p.category === opts.category);
   }

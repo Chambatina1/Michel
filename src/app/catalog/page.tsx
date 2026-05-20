@@ -434,6 +434,9 @@ function CatalogContent() {
   const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
+  // Track the parentCategory from the URL for API-level filtering
+  const urlParentCategory = searchParams.get('parentCategory');
+
   // Handle parentCategory and category from URL
   useEffect(() => {
     const parentCat = searchParams.get('parentCategory');
@@ -462,7 +465,14 @@ function CatalogContent() {
     try {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
-      if (selectedCategories.length === 1) params.set('category', selectedCategories[0]);
+
+      // If we have a parentCategory from URL, pass it to the API for server-side filtering
+      if (urlParentCategory) {
+        params.set('parentCategory', urlParentCategory);
+      } else if (selectedCategories.length === 1) {
+        params.set('category', selectedCategories[0]);
+      }
+
       if (selectedConditions.length === 1) params.set('condition', selectedConditions[0]);
 
       const res = await fetch(`/api/products?${params.toString()}`);
@@ -471,7 +481,8 @@ function CatalogContent() {
         let filtered = data.products;
 
         // Client-side filtering for multiple categories/conditions
-        if (selectedCategories.length > 1) {
+        // (only when not using parentCategory server-side filter)
+        if (!urlParentCategory && selectedCategories.length > 1) {
           filtered = filtered.filter((p: Product) => selectedCategories.includes(p.category));
         }
         if (selectedConditions.length > 1) {
@@ -485,7 +496,7 @@ function CatalogContent() {
     } finally {
       setLoading(false);
     }
-  }, [search, selectedCategories, selectedConditions]);
+  }, [search, selectedCategories, selectedConditions, urlParentCategory]);
 
   useEffect(() => {
     const debounce = setTimeout(fetchProducts, 300);
