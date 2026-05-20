@@ -22,6 +22,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { CTASection } from '@/components/layout/CTASection';
+import { useSiteSettings, getSetting } from '@/lib/useSiteSettings';
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -29,6 +30,11 @@ const fadeInUp = {
 };
 
 export default function AboutPage() {
+  const { settings } = useSiteSettings();
+
+  const mission = getSetting(settings, 'about_mission', 'To make high-quality medical imaging equipment accessible and affordable for healthcare providers of all sizes. We believe every patient deserves the best diagnostic care, and we\'re committed to helping facilities achieve that goal through fair pricing, expert guidance, and exceptional service.');
+  const teamTitle = getSetting(settings, 'about_team_title', 'Our Team of Experts');
+
   return (
     <>
       {/* Hero */}
@@ -69,7 +75,7 @@ export default function AboutPage() {
               <Heart className="h-10 w-10 text-teal-600 mx-auto mb-4" />
               <h2 className="text-2xl font-bold text-foreground sm:text-3xl mb-4">Our Mission</h2>
               <p className="text-muted-foreground leading-relaxed text-lg">
-                To make high-quality medical imaging equipment accessible and affordable for healthcare providers of all sizes. We believe every patient deserves the best diagnostic care, and we&apos;re committed to helping facilities achieve that goal through fair pricing, expert guidance, and exceptional service.
+                {mission}
               </p>
             </motion.div>
           </div>
@@ -170,7 +176,7 @@ export default function AboutPage() {
               transition={{ duration: 0.4 }}
             >
               <h2 className="text-2xl font-bold text-foreground sm:text-3xl mb-4">
-                Our Team of <span className="text-teal-600">Experts</span>
+                {teamTitle.split(' ').slice(0, -1).join(' ')} <span className="text-teal-600">{teamTitle.split(' ').slice(-1)}</span>
               </h2>
               <p className="text-muted-foreground leading-relaxed mb-6">
                 Our team brings together decades of combined experience in medical imaging, biomedical engineering, and healthcare operations. Every member of our team shares a commitment to helping healthcare facilities succeed.

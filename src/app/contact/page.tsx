@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { LeadForm } from '@/components/layout/LeadForm';
 import { CTASection } from '@/components/layout/CTASection';
+import { useSiteSettings, getSetting } from '@/lib/useSiteSettings';
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -21,6 +22,17 @@ const fadeInUp = {
 };
 
 export default function ContactPage() {
+  const { settings } = useSiteSettings();
+
+  const phone = getSetting(settings, 'contact_phone', '+1 (305) 244-9340');
+  const email = getSetting(settings, 'contact_email', 'info@psmedicaldevices.com');
+  const address = getSetting(settings, 'contact_address', '2234 Winter Woods, Suite 1000, Winter Park, FL 32792');
+  const hours = getSetting(settings, 'contact_hours', 'Mon-Fri: 8:00 AM - 6:00 PM\nSat: 9:00 AM - 1:00 PM');
+  const mapUrl = getSetting(settings, 'contact_map_url', '');
+
+  const hoursLines = hours.split(/\n/).filter(Boolean);
+  const phoneHref = phone.replace(/[^+\d]/g, '');
+
   return (
     <>
       {/* Hero */}
@@ -85,9 +97,9 @@ export default function ContactPage() {
                   <div>
                     <p className="font-semibold text-foreground">Phone</p>
                     <Button asChild variant="link" className="h-auto p-0 text-teal-600 hover:text-teal-700">
-                      <a href="tel:+13052449340">+1 (305) 244-9340</a>
+                      <a href={`tel:${phoneHref}`}>{phone}</a>
                     </Button>
-                    <p className="text-xs text-muted-foreground mt-0.5">Mon-Fri 8am-6pm EST</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{hoursLines[0] || 'Mon-Fri 8am-6pm EST'}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -100,7 +112,7 @@ export default function ContactPage() {
                   <div>
                     <p className="font-semibold text-foreground">Email</p>
                     <Button asChild variant="link" className="h-auto p-0 text-teal-600 hover:text-teal-700">
-                      <a href="mailto:info@psmedicaldevices.com">info@psmedicaldevices.com</a>
+                      <a href={`mailto:${email}`}>{email}</a>
                     </Button>
                     <p className="text-xs text-muted-foreground mt-0.5">We reply within 24 hours</p>
                   </div>
@@ -115,9 +127,9 @@ export default function ContactPage() {
                   <div>
                     <p className="font-semibold text-foreground">Address</p>
                     <p className="text-sm text-muted-foreground">
-                      2234 Winter Woods,
-                      <br />
-                      Suite 1000, Winter Park, FL 32792
+                      {address.split(',').map((line, i) => (
+                        <span key={i}>{line.trim()}{i < address.split(',').length - 1 && <><br /></>}</span>
+                      ))}
                     </p>
                   </div>
                 </CardContent>
@@ -131,9 +143,12 @@ export default function ContactPage() {
                   <div>
                     <p className="font-semibold text-foreground">Business Hours</p>
                     <div className="text-sm text-muted-foreground space-y-0.5 mt-1">
-                      <p>Monday - Friday: 8:00 AM - 6:00 PM</p>
-                      <p>Saturday: 9:00 AM - 1:00 PM</p>
-                      <p>Sunday: Closed</p>
+                      {hoursLines.map((line, i) => (
+                        <p key={i}>{line}</p>
+                      ))}
+                      {!hoursLines.some(l => l.toLowerCase().includes('sun')) && (
+                        <p>Sunday: Closed</p>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -142,13 +157,13 @@ export default function ContactPage() {
               {/* Quick Contact Buttons */}
               <div className="grid grid-cols-2 gap-3">
                 <Button asChild variant="outline" className="h-auto py-3">
-                  <a href="tel:+13052449340">
+                  <a href={`tel:${phoneHref}`}>
                     <Phone className="mr-2 h-4 w-4" />
                     Call Us
                   </a>
                 </Button>
                 <Button asChild variant="outline" className="h-auto py-3">
-                  <a href="mailto:info@psmedicaldevices.com">
+                  <a href={`mailto:${email}`}>
                     <Mail className="mr-2 h-4 w-4" />
                     Email Us
                   </a>
@@ -169,15 +184,31 @@ export default function ContactPage() {
             viewport={{ once: true }}
             transition={{ duration: 0.4 }}
           >
-            <div className="h-72 sm:h-80 lg:h-96 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center overflow-hidden">
-              <div className="text-center">
-                <MapPin className="h-12 w-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                <p className="font-semibold text-slate-400 dark:text-slate-500">Map</p>
-                <p className="text-sm text-slate-400 dark:text-slate-600 mt-1 max-w-sm">
-                  2234 Winter Woods, Suite 1000, Winter Park, FL 32792
-                </p>
+            {mapUrl ? (
+              <div className="h-72 sm:h-80 lg:h-96 rounded-xl overflow-hidden">
+                <iframe
+                  src={mapUrl}
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="Location Map"
+                  className="rounded-xl"
+                />
               </div>
-            </div>
+            ) : (
+              <div className="h-72 sm:h-80 lg:h-96 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center overflow-hidden">
+                <div className="text-center">
+                  <MapPin className="h-12 w-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+                  <p className="font-semibold text-slate-400 dark:text-slate-500">Map</p>
+                  <p className="text-sm text-slate-400 dark:text-slate-600 mt-1 max-w-sm">
+                    {address}
+                  </p>
+                </div>
+              </div>
+            )}
           </motion.div>
         </div>
       </section>

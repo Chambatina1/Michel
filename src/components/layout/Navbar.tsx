@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { useCartStore } from "@/store/cart-store";
+import { useSiteSettings, getSetting } from "@/lib/useSiteSettings";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -37,6 +38,9 @@ export function Navbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const cartItemCount = useCartStore((s) => s.getItemCount());
+  const { settings } = useSiteSettings();
+  const companyName = getSetting(settings, 'company_name', 'P&S MEDICAL DEVICE INC.');
+  const tagline = getSetting(settings, 'tagline', 'Medical Imaging & Ophthalmology Equipment');
   // Use useSyncExternalStore for hydration-safe mounted detection
   const mounted = useSyncExternalStore(
     () => () => {},
@@ -67,9 +71,9 @@ export function Navbar() {
           />
           <div className="min-w-0">
             <span className="block text-lg sm:text-xl lg:text-2xl font-extrabold leading-tight tracking-tight text-primary whitespace-nowrap">
-              P&S MEDICAL DEVICE INC.
+              {companyName}
             </span>
-            <span className="hidden sm:block text-xs text-muted-foreground whitespace-nowrap">Medical Imaging &amp; Ophthalmology Equipment</span>
+            <span className="hidden sm:block text-xs text-muted-foreground whitespace-nowrap">{tagline}</span>
           </div>
         </Link>
 
@@ -134,12 +138,12 @@ export function Navbar() {
               <SheetTitle className="flex items-center gap-3">
                 <Image
                   src="/images/logo.jpeg"
-                  alt="P&S Medical Device Inc."
+                  alt={companyName}
                   width={80}
                   height={80}
                   className="rounded-lg object-contain shadow-md"
                 />
-                P&S Medical Device Inc.
+                {companyName}
               </SheetTitle>
             </SheetHeader>
 

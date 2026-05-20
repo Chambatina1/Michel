@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -9,8 +11,10 @@ import {
   Twitter,
   Linkedin,
   Instagram,
+  Youtube,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { useSiteSettings, getSetting } from "@/lib/useSiteSettings";
 
 const quickLinks = [
   { label: "Equipment", href: "/catalog" },
@@ -29,14 +33,49 @@ const supportLinks = [
   { label: "Privacy Policy", href: "/privacy" },
 ];
 
-const socialLinks = [
-  { icon: Facebook, href: "#", label: "Facebook" },
-  { icon: Twitter, href: "#", label: "Twitter" },
-  { icon: Linkedin, href: "#", label: "LinkedIn" },
-  { icon: Instagram, href: "#", label: "Instagram" },
-];
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  facebook: Facebook,
+  twitter: Twitter,
+  linkedin: Linkedin,
+  instagram: Instagram,
+  youtube: Youtube,
+};
 
 export function Footer() {
+  const { settings } = useSiteSettings();
+
+  const companyName = getSetting(settings, 'company_name', 'P&S Medical Device Inc.');
+  const companyDescription = getSetting(
+    settings,
+    'company_description',
+    'Your trusted partner for premium medical imaging equipment. We provide sales, expert advisory, repair services, and equipment buybacks for healthcare facilities worldwide.'
+  );
+  const phone = getSetting(settings, 'contact_phone', '+1 (305) 244-9340');
+  const email = getSetting(settings, 'contact_email', 'info@psmedicaldevices.com');
+  const address = getSetting(settings, 'contact_address', '2234 Winter Woods, Suite 1000, Winter Park, FL 32792');
+  const hours = getSetting(settings, 'contact_hours', 'Mon-Fri: 8:00 AM - 6:00 PM');
+
+  const facebookUrl = getSetting(settings, 'facebook_url', '');
+  const twitterUrl = getSetting(settings, 'twitter_url', '');
+  const linkedinUrl = getSetting(settings, 'linkedin_url', '');
+  const instagramUrl = getSetting(settings, 'instagram_url', '');
+  const youtubeUrl = getSetting(settings, 'youtube_url', '');
+  const tiktokUrl = getSetting(settings, 'tiktok_url', '');
+
+  const socialLinks = [
+    { icon: Facebook, href: facebookUrl, label: "Facebook" },
+    { icon: Twitter, href: twitterUrl, label: "Twitter" },
+    { icon: Linkedin, href: linkedinUrl, label: "LinkedIn" },
+    { icon: Instagram, href: instagramUrl, label: "Instagram" },
+    { icon: Youtube, href: youtubeUrl, label: "YouTube" },
+  ].filter((s) => s.href && s.href !== '#');
+
+  // Split hours by newline for multiple lines
+  const hoursLines = hours.split(/\n/).filter(Boolean);
+
+  // Split address for line breaks
+  const addressLines = address.split(',').map((line) => line.trim());
+
   return (
     <footer className="bg-primary text-primary-foreground">
       {/* Main Footer Content */}
@@ -47,22 +86,19 @@ export function Footer() {
             <Link href="/" className="inline-flex items-center gap-3 group">
               <Image
                 src="/images/logo.jpeg"
-                alt="P&S Medical Device Inc."
+                alt={companyName}
                 width={100}
                 height={100}
                 className="rounded-xl object-contain transition-transform group-hover:scale-105 shadow-md border-2 border-white/10"
               />
               <div>
                 <span className="text-lg font-bold leading-tight tracking-tight text-white">
-                  P&S Medical Device Inc.
+                  {companyName}
                 </span>
-                <span className="block text-xs text-white/50">Medical Imaging &amp; Ophthalmology Equipment</span>
               </div>
             </Link>
             <p className="text-sm leading-relaxed text-primary-foreground/70 max-w-xs">
-              Your trusted partner for premium medical imaging equipment. We
-              provide sales, expert advisory, repair services, and equipment
-              buybacks for healthcare facilities worldwide.
+              {companyDescription}
             </p>
             <div className="flex items-center gap-3 pt-2">
               {socialLinks.map((social) => (
@@ -126,36 +162,37 @@ export function Footer() {
                 <Phone className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
                 <div>
                   <p className="text-sm text-primary-foreground/70">
-                    +1 (305) 244-9340
+                    {phone}
                   </p>
                   <p className="text-xs text-primary-foreground/40">
-                    Mon-Fri 8am-6pm EST
+                    {hoursLines[0] || 'Mon-Fri 8am-6pm EST'}
                   </p>
                 </div>
               </li>
               <li className="flex items-start gap-3">
                 <Mail className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
                 <p className="text-sm text-primary-foreground/70">
-                  info@psmedicaldevices.com
+                  {email}
                 </p>
               </li>
               <li className="flex items-start gap-3">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
                 <p className="text-sm text-primary-foreground/70">
-                  2234 Winter Woods,
-                  <br />
-                  Suite 1000, Winter Park, FL 32792
+                  {addressLines.map((line, i) => (
+                    <span key={i}>
+                      {line}{i < addressLines.length - 1 && <><br /></>}
+                    </span>
+                  ))}
                 </p>
               </li>
               <li className="flex items-start gap-3">
                 <Clock className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
                 <div>
-                  <p className="text-sm text-primary-foreground/70">
-                    Mon - Fri: 8:00 AM - 6:00 PM
-                  </p>
-                  <p className="text-xs text-primary-foreground/40">
-                    Sat: 9:00 AM - 1:00 PM
-                  </p>
+                  {hoursLines.map((line, i) => (
+                    <p key={i} className={i === 0 ? "text-sm text-primary-foreground/70" : "text-xs text-primary-foreground/40"}>
+                      {line}
+                    </p>
+                  ))}
                 </div>
               </li>
             </ul>
@@ -168,7 +205,7 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
         <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
           <p className="text-xs text-primary-foreground/50">
-            &copy; {new Date().getFullYear()} P&S Medical Device Inc. All rights
+            &copy; {new Date().getFullYear()} {companyName}. All rights
             reserved.
           </p>
           <div className="flex items-center gap-4">

@@ -1,7 +1,10 @@
+"use client";
+
 import { TrustBar } from "@/components/layout/TrustBar";
 import { CTASection } from "@/components/layout/CTASection";
 import { LeadForm } from "@/components/layout/LeadForm";
 import { BlogSection } from "@/components/layout/BlogSection";
+import { useSiteSettings, getSetting } from "@/lib/useSiteSettings";
 import {
   Search,
   ArrowRight,
@@ -22,6 +25,47 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export default function HomePage() {
+  const { settings } = useSiteSettings();
+
+  // Hero
+  const heroBadge = getSetting(settings, 'hero_badge', 'Trusted by 500+ Healthcare Facilities');
+  const heroHeadline = getSetting(settings, 'hero_headline', 'Medical Imaging & Ophthalmology|Equipment You Can Trust');
+  const heroSubtitle = getSetting(settings, 'hero_subtitle', 'From CT scanners to ophthalmology devices, we supply, service, and buy medical equipment with unmatched expertise and fair pricing.');
+  const heroBtnPrimary = getSetting(settings, 'hero_btn_primary', 'Browse Equipment');
+  const heroBtnSecondary = getSetting(settings, 'hero_btn_secondary', 'Sell Your Equipment');
+
+  const headlineParts = heroHeadline.split('|');
+  const headlineMain = headlineParts[0] || heroHeadline;
+  const headlineAccent = headlineParts[1] || '';
+
+  // Stats
+  const stats = [
+    { value: getSetting(settings, 'stat1_value', '500+'), label: getSetting(settings, 'stat1_label', 'Healthcare Clients') },
+    { value: getSetting(settings, 'stat2_value', '2,000+'), label: getSetting(settings, 'stat2_label', 'Devices Sold') },
+    { value: getSetting(settings, 'stat3_value', '15+'), label: getSetting(settings, 'stat3_label', 'Years Experience') },
+    { value: getSetting(settings, 'stat4_value', '98%'), label: getSetting(settings, 'stat4_label', 'Client Satisfaction') },
+  ];
+
+  // Why Choose Us
+  const whyTitle = getSetting(settings, 'why_title', 'Why Healthcare Facilities Choose P&S Medical Device Inc.');
+  const whySubtitle = getSetting(settings, 'why_subtitle', 'With over 15 years in the medical equipment industry, we combine technical expertise with a commitment to patient care outcomes.');
+  const whyFeatures = [
+    { icon: ShieldCheck, title: getSetting(settings, 'why_f1_title', 'Quality Guaranteed'), desc: getSetting(settings, 'why_f1_desc', 'Every device undergoes rigorous testing and certification before delivery.') },
+    { icon: TrendingUp, title: getSetting(settings, 'why_f2_title', 'Competitive Pricing'), desc: getSetting(settings, 'why_f2_desc', 'Save 30-60% compared to new equipment without sacrificing performance.') },
+    { icon: Wrench, title: getSetting(settings, 'why_f3_title', 'Full Service & Support'), desc: getSetting(settings, 'why_f3_desc', 'Installation, training, maintenance, and 24/7 emergency repair services.') },
+    { icon: Search, title: getSetting(settings, 'why_f4_title', 'Expert Consultation'), desc: getSetting(settings, 'why_f4_desc', 'Our specialists help you choose the right equipment for your specific needs.') },
+  ];
+
+  // CTA 1
+  const cta1Title = getSetting(settings, 'cta1_title', 'Ready to Upgrade Your Medical Equipment?');
+  const cta1Desc = getSetting(settings, 'cta1_desc', "Whether you're buying, selling, or need service, our team is ready to help you find the perfect solution for your facility.");
+  const cta1Btn = getSetting(settings, 'cta1_btn', 'Get a Free Consultation');
+
+  // CTA 2
+  const cta2Title = getSetting(settings, 'cta2_title', 'Have Old Equipment to Sell?');
+  const cta2Desc = getSetting(settings, 'cta2_desc', 'We buy used, broken, or decommissioned medical devices at fair market prices. Get a same-day offer.');
+  const cta2Btn = getSetting(settings, 'cta2_btn', 'Get Your Offer Now');
+
   return (
     <>
       {/* Trust Bar */}
@@ -37,16 +81,19 @@ export default function HomePage() {
         <div className="relative mx-auto flex min-h-[520px] max-w-7xl flex-col items-center justify-center px-4 py-20 text-center sm:px-6 sm:py-28 lg:px-8">
           <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
             <HeartPulse className="h-3.5 w-3.5" />
-            Trusted by 500+ Healthcare Facilities
+            {heroBadge}
           </span>
           <h1 className="max-w-3xl text-3xl font-bold tracking-tight text-white sm:text-4xl md:text-5xl lg:text-6xl">
-            Medical Imaging & Ophthalmology
-            <br />
-            <span className="text-accent">Equipment You Can Trust</span>
+            {headlineMain}
+            {headlineAccent && (
+              <>
+                <br />
+                <span className="text-accent">{headlineAccent}</span>
+              </>
+            )}
           </h1>
           <p className="mt-6 max-w-2xl text-base leading-relaxed text-white/75 sm:text-lg">
-            From CT scanners to ophthalmology devices, we supply, service, and
-            buy medical equipment with unmatched expertise and fair pricing.
+            {heroSubtitle}
           </p>
           <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row">
             <Button
@@ -55,7 +102,7 @@ export default function HomePage() {
               className="min-w-[180px] bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg whitespace-nowrap"
             >
               <Link href="/catalog">
-                Browse Equipment
+                {heroBtnPrimary}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
@@ -65,7 +112,7 @@ export default function HomePage() {
               size="lg"
               className="min-w-[180px] border-white/30 bg-transparent text-white hover:bg-white/10 hover:text-white whitespace-nowrap"
             >
-              <Link href="/sell-equipment">Sell Your Equipment</Link>
+              <Link href="/sell-equipment">{heroBtnSecondary}</Link>
             </Button>
           </div>
         </div>
@@ -184,12 +231,7 @@ export default function HomePage() {
       {/* Stats Section */}
       <section className="border-y border-border bg-secondary/30 py-14">
         <div className="mx-auto grid max-w-7xl grid-cols-2 gap-8 px-4 sm:px-6 md:grid-cols-4 lg:px-8">
-          {[
-            { value: "500+", label: "Healthcare Clients" },
-            { value: "2,000+", label: "Devices Sold" },
-            { value: "15+", label: "Years Experience" },
-            { value: "98%", label: "Client Satisfaction" },
-          ].map((stat) => (
+          {stats.map((stat) => (
             <div key={stat.label} className="text-center">
               <p className="text-3xl font-bold text-primary sm:text-4xl">
                 {stat.value}
@@ -208,37 +250,13 @@ export default function HomePage() {
           <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
             <div>
               <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-                Why Healthcare Facilities Choose{" "}
-                <span className="text-accent">P&S Medical Device Inc.</span>
+                {whyTitle}
               </h2>
               <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-                With over 15 years in the medical equipment industry, we
-                combine technical expertise with a commitment to patient care
-                outcomes.
+                {whySubtitle}
               </p>
               <ul className="mt-8 space-y-4">
-                {[
-                  {
-                    icon: ShieldCheck,
-                    title: "Quality Guaranteed",
-                    desc: "Every device undergoes rigorous testing and certification before delivery.",
-                  },
-                  {
-                    icon: TrendingUp,
-                    title: "Competitive Pricing",
-                    desc: "Save 30-60% compared to new equipment without sacrificing performance.",
-                  },
-                  {
-                    icon: Wrench,
-                    title: "Full Service & Support",
-                    desc: "Installation, training, maintenance, and 24/7 emergency repair services.",
-                  },
-                  {
-                    icon: Search,
-                    title: "Expert Consultation",
-                    desc: "Our specialists help you choose the right equipment for your specific needs.",
-                  },
-                ].map((item) => (
+                {whyFeatures.map((item) => (
                   <li key={item.title} className="flex items-start gap-3">
                     <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-accent/10 text-accent">
                       <item.icon className="h-4 w-4" />
@@ -267,18 +285,18 @@ export default function HomePage() {
 
       {/* CTA Section */}
       <CTASection
-        title="Ready to Upgrade Your Medical Equipment?"
-        description="Whether you're buying, selling, or need service, our team is ready to help you find the perfect solution for your facility."
-        buttonText="Get a Free Consultation"
+        title={cta1Title}
+        description={cta1Desc}
+        buttonText={cta1Btn}
         buttonLink="/contact?type=quote"
         variant="primary"
       />
 
       {/* Second CTA */}
       <CTASection
-        title="Have Old Equipment to Sell?"
-        description="We buy used, broken, or decommissioned medical devices at fair market prices. Get a same-day offer."
-        buttonText="Get Your Offer Now"
+        title={cta2Title}
+        description={cta2Desc}
+        buttonText={cta2Btn}
         buttonLink="/sell-equipment"
         variant="accent"
       />

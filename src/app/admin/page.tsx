@@ -735,6 +735,8 @@ export default function AdminPage() {
     } else {
       setImagePreview('');
     }
+    // Ensure categories are loaded before opening the product dialog
+    if (categories.length === 0) fetchCategories();
     setProductDialogOpen(true);
   };
 
@@ -3041,7 +3043,12 @@ export default function AdminPage() {
                 <Label>Subcategory</Label>
                 {(() => {
                   const selectedCat = categories.find((c: any) => c.name === productForm.parentCategory);
-                  const subs = selectedCat?.subcategoriesList || [];
+                  // Try subcategoriesList first; fall back to parsing the comma-separated subcategories string
+                  const subs: string[] = Array.isArray(selectedCat?.subcategoriesList) && selectedCat.subcategoriesList.length > 0
+                    ? selectedCat.subcategoriesList
+                    : (typeof selectedCat?.subcategories === 'string' && selectedCat.subcategories.trim()
+                        ? selectedCat.subcategories.split(',').map((s: string) => s.trim()).filter(Boolean)
+                        : []);
                   if (subs.length > 0) {
                     return (
                       <Select value={productForm.subCategory} onValueChange={(v) => setProductForm(prev => ({ ...prev, subCategory: v, category: v }))}>
@@ -3055,7 +3062,14 @@ export default function AdminPage() {
                     );
                   }
                   if (productForm.parentCategory) {
-                    return <Input value={productForm.parentCategory} disabled placeholder={productForm.parentCategory} />;
+                    // No predefined subcategories – allow the user to type a custom one
+                    return (
+                      <Input
+                        value={productForm.subCategory || ''}
+                        onChange={(e) => setProductForm(prev => ({ ...prev, subCategory: e.target.value, category: e.target.value }))}
+                        placeholder="Type a custom subcategory..."
+                      />
+                    );
                   }
                   return <Input disabled placeholder="Select parent first" />;
                 })()}

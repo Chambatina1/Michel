@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
+import { useSiteSettings, getSetting } from '@/lib/useSiteSettings';
 import {
   Select,
   SelectContent,
@@ -102,6 +103,9 @@ export default function SellEquipmentPage() {
   const [photos, setPhotos] = useState<string[]>([]);
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { settings } = useSiteSettings();
+  const phone = getSetting(settings, 'contact_phone', '+1 (305) 244-9340');
+  const phoneHref = phone.replace(/[^+\d]/g, '');
 
   const form = useForm<SellFormValues>({
     resolver: zodResolver(sellFormSchema),
@@ -607,7 +611,7 @@ export default function SellEquipmentPage() {
                       Call us directly for a faster evaluation.
                     </p>
                     <Button asChild className="bg-teal-600 hover:bg-teal-700 text-white w-full">
-                      <a href="tel:+18005550199">(800) 555-0199</a>
+                      <a href={`tel:${phoneHref}`}>{phone}</a>
                     </Button>
                   </CardContent>
                 </Card>
