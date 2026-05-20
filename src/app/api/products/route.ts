@@ -11,7 +11,8 @@ export async function GET(request: NextRequest) {
   const condition = searchParams.get('condition');
   const search = searchParams.get('search');
   const featured = searchParams.get('featured');
-  const status = searchParams.get('status') || 'active';
+  const rawStatus = searchParams.get('status') || 'active';
+  const status = rawStatus === 'all' ? undefined : rawStatus;
   const page = parseInt(searchParams.get('page') || '1', 10);
   const limit = parseInt(searchParams.get('limit') || '100', 10);
   const sort = searchParams.get('sort') || 'createdAt';
@@ -24,14 +25,15 @@ export async function GET(request: NextRequest) {
     condition: condition || undefined,
     search: search || undefined,
     featured: featured || undefined,
-    status,
+    status: rawStatus === 'all' ? 'all' : rawStatus,
   };
 
   // Try database first
   try {
     const skip = (page - 1) * limit;
 
-    const where: Record<string, unknown> = { status };
+    const where: Record<string, unknown> = {};
+    if (status) where.status = status;
 
     if (category) where.category = category;
     if (parentCategory) where.parentCategory = { contains: parentCategory };

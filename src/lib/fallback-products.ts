@@ -694,7 +694,11 @@ export function filterFallbackProducts(
   products: FallbackProduct[],
   opts: { category?: string; condition?: string; search?: string; featured?: string; status: string; parentCategory?: string }
 ) {
-  let filtered = products.filter((p) => p.status === opts.status);
+  let filtered = products;
+
+  if (opts.status && opts.status !== 'all') {
+    filtered = filtered.filter((p) => p.status === opts.status);
+  }
 
   if (opts.parentCategory) {
     const pc = opts.parentCategory.toLowerCase();

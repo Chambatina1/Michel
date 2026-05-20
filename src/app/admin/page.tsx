@@ -428,7 +428,7 @@ export default function AdminPage() {
     setDataLoading(true);
     try {
       const [productsRes, leadsRes, reviewsRes, sellRes] = await Promise.all([
-        fetch('/api/products?limit=100&status=all'),
+        fetch('/api/products?limit=500&status=all'),
         fetch('/api/leads?limit=100'),
         fetch('/api/reviews?admin=true&limit=100'),
         fetch('/api/sell-equipment?limit=100'),
