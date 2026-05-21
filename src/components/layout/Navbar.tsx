@@ -3,7 +3,7 @@
 import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, ShoppingCart } from "lucide-react";
+import { Menu, X, ShoppingCart, ChevronDown, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,39 +14,69 @@ import {
   SheetTrigger,
   SheetClose,
 } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useCartStore } from "@/store/cart-store";
 import { useSiteSettings, getSetting } from "@/lib/useSiteSettings";
 
-const navLinks = [
-  { label: "Home", href: "/" },
-  { label: "Equipment", href: "/catalog" },
-  {
-    label: "Sell Your Equipment",
-    href: "/sell-equipment",
-    highlight: true,
-  },
-  { label: "Parts & Accessories", href: "/parts-accessories" },
-  { label: "Services", href: "/services" },
-  { label: "Blog", href: "/blog" },
-  { label: "About", href: "/about" },
-  { label: "Reviews", href: "/reviews" },
-  { label: "Contact", href: "/contact" },
-];
+interface SubcategoryWithCount {
+  name: string;
+  count: number;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  subcategories: string;
+  subcategoriesList: SubcategoryWithCount[];
+}
 
 export function Navbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
   const cartItemCount = useCartStore((s) => s.getItemCount());
   const { settings } = useSiteSettings();
   const companyName = getSetting(settings, 'company_name', 'P&S MEDICAL DEVICE INC.');
   const tagline = getSetting(settings, 'tagline', 'Medical Imaging & Ophthalmology Equipment');
-  // Use useSyncExternalStore for hydration-safe mounted detection
   const mounted = useSyncExternalStore(
     () => () => {},
     () => true,
     () => false,
   );
+
+  // Fetch categories for dynamic navigation
+  useState(() => {
+    fetch('/api/categories')
+      .then(res => res.json())
+      .then(data => setCategories(data.categories || []))
+      .catch(() => {});
+  });
+
+  // Equipment categories for the dropdown (exclude Parts)
+  const equipmentCategories = categories.filter(c => {
+    const n = c.name.toLowerCase();
+    return !n.includes('part') && !n.includes('accessory');
+  });
+  const partsCategory = categories.find(c => {
+    const n = c.name.toLowerCase();
+    return n.includes('part') || n.includes('accessory');
+  });
+
+  const staticLinks = [
+    { label: "Home", href: "/" },
+    { label: "Sell Your Equipment", href: "/sell-equipment", highlight: true },
+    { label: "Services", href: "/services" },
+    { label: "Blog", href: "/blog" },
+    { label: "About", href: "/about" },
+    { label: "Reviews", href: "/reviews" },
+    { label: "Contact", href: "/contact" },
+  ];
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
@@ -55,7 +85,6 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 w-full">
-      {/* Glass / blur background */}
       <div className="absolute inset-0 bg-background/80 backdrop-blur-xl border-b border-border/50" />
 
       <div className="relative mx-auto flex h-24 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -79,7 +108,7 @@ export function Navbar() {
 
         {/* Desktop Navigation */}
         <nav className="hidden lg:flex items-center gap-1">
-          {navLinks.map((link) => (
+          {staticLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -96,6 +125,84 @@ export function Navbar() {
               )}
             </Link>
           ))}
+
+          {/* Equipment Dropdown — Dynamic from categories */}
+          {equipmentCategories.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className={cn(
+                    "relative px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-1",
+                    pathname.startsWith('/catalog')
+                      ? "text-primary"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  )}
+                >
+                  Equipment
+                  <ChevronDown className="h-3.5 w-3.5" />
+                  {pathname.startsWith('/catalog') && (
+                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-5 rounded-full bg-accent" />
+                  )}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-64 max-h-[400px] overflow-y-auto">
+                <DropdownMenuItem asChild>
+                  <Link href="/catalog" className="font-medium text-primary">
+                    All Equipment
+                  </Link>
+                </DropdownMenuItem>
+                {equipmentCategories.map((cat) => (
+                  <div key={cat.id}>
+                    <DropdownMenuItem asChild className="font-semibold text-muted-foreground pointer-events-none">
+                      <span className="text-xs uppercase tracking-wider">{cat.name}</span>
+                    </DropdownMenuItem>
+                    {(cat.subcategoriesList || []).map((sub) => (
+                      <DropdownMenuItem key={sub.name} asChild>
+                        <Link href={`/catalog?parentCategory=${encodeURIComponent(cat.name)}&category=${encodeURIComponent(sub.name)}`} className="pl-4 text-sm">
+                          {sub.name}
+                          {sub.count > 0 && (
+                            <span className="ml-auto text-xs text-muted-foreground">({sub.count})</span>
+                          )}
+                        </Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </div>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          {equipmentCategories.length === 0 && (
+            <Link
+              href="/catalog"
+              className={cn(
+                "relative px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                isActive('/catalog')
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+              )}
+            >
+              Equipment
+              {isActive('/catalog') && (
+                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-5 rounded-full bg-accent" />
+              )}
+            </Link>
+          )}
+
+          {/* Parts & Accessories link */}
+          <Link
+            href="/parts-accessories"
+            className={cn(
+              "relative px-3 py-2 text-sm font-medium rounded-md transition-colors",
+              isActive('/parts-accessories')
+                ? "text-primary"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+            )}
+          >
+            <span className="whitespace-nowrap">Parts & Accessories</span>
+            {isActive('/parts-accessories') && (
+              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-5 rounded-full bg-accent" />
+            )}
+          </Link>
         </nav>
 
         {/* Desktop CTA */}
@@ -147,8 +254,8 @@ export function Navbar() {
               </SheetTitle>
             </SheetHeader>
 
-            <nav className="flex flex-col gap-1 px-2 py-4">
-              {navLinks.map((link) => (
+            <nav className="flex flex-col gap-1 px-2 py-4 max-h-[calc(100vh-200px)] overflow-y-auto">
+              {staticLinks.map((link) => (
                 <SheetClose asChild key={link.href}>
                   <Link
                     href={link.href}
@@ -166,6 +273,64 @@ export function Navbar() {
                   </Link>
                 </SheetClose>
               ))}
+
+              {/* Equipment section in mobile */}
+              <SheetClose asChild>
+                <Link
+                  href="/catalog"
+                  className={cn(
+                    "flex items-center justify-between rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                    isActive('/catalog')
+                      ? "bg-secondary text-primary"
+                      : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  )}
+                >
+                  <span className="whitespace-nowrap">All Equipment</span>
+                  {isActive('/catalog') && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                  )}
+                </Link>
+              </SheetClose>
+
+              {/* Dynamic subcategory links in mobile */}
+              {equipmentCategories.map((cat) => (
+                <div key={cat.id}>
+                  <div className="px-3 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    {cat.name}
+                  </div>
+                  {(cat.subcategoriesList || []).map((sub) => (
+                    <SheetClose asChild key={sub.name}>
+                      <Link
+                        href={`/catalog?parentCategory=${encodeURIComponent(cat.name)}&category=${encodeURIComponent(sub.name)}`}
+                        className="flex items-center justify-between rounded-md px-6 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+                      >
+                        <span>{sub.name}</span>
+                        {sub.count > 0 && (
+                          <span className="text-xs">{sub.count}</span>
+                        )}
+                      </Link>
+                    </SheetClose>
+                  ))}
+                </div>
+              ))}
+
+              {/* Parts & Accessories */}
+              <SheetClose asChild>
+                <Link
+                  href="/parts-accessories"
+                  className={cn(
+                    "flex items-center justify-between rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                    isActive('/parts-accessories')
+                      ? "bg-secondary text-primary"
+                      : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  )}
+                >
+                  <span className="whitespace-nowrap">Parts & Accessories</span>
+                  {isActive('/parts-accessories') && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                  )}
+                </Link>
+              </SheetClose>
             </nav>
 
             <div className="mt-auto border-t border-border px-4 py-4">

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { TrustBar } from "@/components/layout/TrustBar";
 import { CTASection } from "@/components/layout/CTASection";
 import { LeadForm } from "@/components/layout/LeadForm";
@@ -19,13 +20,102 @@ import {
   Camera,
   Grid3X3,
   Ruler,
+  Cpu,
+  Package,
+  CircleDot,
+  Cable,
+  Zap,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
+/* ── Icon mapping for dynamic categories ── */
+const CATEGORY_ICON_MAP: Record<string, React.ElementType> = {
+  'imaging': MonitorSmartphone,
+  'ophthalmology': ShieldCheck,
+  'parts': Wrench,
+  'laboratory': Activity,
+  'surgical': Stethoscope,
+  'patient-monitoring': HeartPulse,
+  'other': Package,
+};
+
+const SUBCATEGORY_ICON_MAP: Record<string, React.ElementType> = {
+  'ct': Activity,
+  'mri': Activity,
+  'x-ray': HeartPulse,
+  'ultrasound': Stethoscope,
+  'mammography': ShieldCheck,
+  'c-arm': MonitorSmartphone,
+  'dxa': Activity,
+  'o-arm': MonitorSmartphone,
+  'oct': ShieldCheck,
+  'retinal camera': Camera,
+  'visual field': Grid3X3,
+  'refractometers': Ruler,
+  'examination': Search,
+};
+
+const PARTS_ICON_MAP: Record<string, React.ElementType> = {
+  'coil': Cpu,
+  'tube': CircleDot,
+  'probe': Package,
+  'lens': Eye,
+  'cable': Cable,
+  'power': Zap,
+  'ophthalmology': Wrench,
+  'connector': Cable,
+  'supply': Zap,
+};
+
+function getIconForSubcategory(name: string): React.ElementType {
+  const key = name.toLowerCase().trim();
+  for (const [k, icon] of Object.entries(SUBCATEGORY_ICON_MAP)) {
+    if (key.includes(k)) return icon;
+  }
+  for (const [k, icon] of Object.entries(PARTS_ICON_MAP)) {
+    if (key.includes(k)) return icon;
+  }
+  return Wrench;
+}
+
+function getIconForCategory(name: string): React.ElementType {
+  const key = name.toLowerCase().trim();
+  for (const [k, icon] of Object.entries(CATEGORY_ICON_MAP)) {
+    if (key.includes(k)) return icon;
+  }
+  return Package;
+}
+
+interface SubcategoryWithCount {
+  name: string;
+  count: number;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  subcategories: string;
+  subcategoriesList: SubcategoryWithCount[];
+}
+
 export default function HomePage() {
   const { settings } = useSiteSettings();
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch categories from API
+  useEffect(() => {
+    fetch('/api/categories')
+      .then(res => res.json())
+      .then(data => {
+        setCategories(data.categories || []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
 
   // Hero
   const heroBadge = getSetting(settings, 'hero_badge', 'Trusted by 500+ Healthcare Facilities');
@@ -66,6 +156,16 @@ export default function HomePage() {
   const cta2Desc = getSetting(settings, 'cta2_desc', 'We buy used, broken, or decommissioned medical devices at fair market prices. Get a same-day offer.');
   const cta2Btn = getSetting(settings, 'cta2_btn', 'Get Your Offer Now');
 
+  // Separate equipment categories from "Parts & Accessories"
+  const equipmentCategories = categories.filter(c => {
+    const n = c.name.toLowerCase();
+    return !n.includes('part') && !n.includes('accessory');
+  });
+  const partsCategory = categories.find(c => {
+    const n = c.name.toLowerCase();
+    return n.includes('part') || n.includes('accessory');
+  });
+
   return (
     <>
       {/* Trust Bar */}
@@ -73,7 +173,7 @@ export default function HomePage() {
 
       {/* Hero Section with Banner Image */}
       <section className="relative overflow-hidden min-h-[520px]">
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{ backgroundImage: "url('/images/hero-banner.jpg')" }}
         />
@@ -118,7 +218,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Equipment Categories - Two Main Categories */}
+      {/* Equipment Categories — Dynamic from API */}
       <section className="py-16 sm:py-20 lg:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
@@ -129,101 +229,116 @@ export default function HomePage() {
               Browse our comprehensive inventory organized by specialty
             </p>
           </div>
-          <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2">
-            {/* Imaging Equipment */}
-            <Card className="group overflow-hidden border-2 transition-all hover:shadow-xl hover:border-accent/30">
-              <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5 pb-2">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-accent/10 text-accent">
-                    <MonitorSmartphone className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-foreground">Imaging Equipment</h3>
-                    <p className="text-sm text-muted-foreground">Medical imaging systems and modalities</p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { name: 'CT Scanners', href: '/catalog?category=CT', icon: Activity, count: '12+ Models' },
-                    { name: 'MRI', href: '/catalog?category=MRI', icon: Stethoscope, count: '8+ Models' },
-                    { name: 'X-Ray', href: '/catalog?category=X-Ray', icon: HeartPulse, count: '15+ Models' },
-                    { name: 'Ultrasound', href: '/catalog?category=Ultrasound', icon: MonitorSmartphone, count: '10+ Models' },
-                  ].map((sub) => (
-                    <Link key={sub.name} href={sub.href} className="flex items-center gap-2.5 rounded-lg border border-border/50 p-3 transition-all hover:bg-accent/5 hover:border-accent/20">
-                      <sub.icon className="h-4 w-4 text-muted-foreground group-hover:text-accent" />
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{sub.name}</p>
-                        <p className="text-xs text-muted-foreground">{sub.count}</p>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-                <Button asChild variant="outline" className="mt-4 w-full whitespace-nowrap">
-                  <Link href="/catalog?parentCategory=Imaging+Equipment">
-                    View All Imaging Equipment
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
 
-            {/* Ophthalmology Equipment */}
-            <Card className="group overflow-hidden border-2 transition-all hover:shadow-xl hover:border-accent/30">
-              <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5 pb-2">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-accent/10 text-accent">
-                    <ShieldCheck className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-foreground">Ophthalmology Equipment</h3>
-                    <p className="text-sm text-muted-foreground">Eye care and diagnostic devices</p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { name: 'OCT', href: '/catalog?category=OCT', icon: Eye, count: '6+ Models' },
-                    { name: 'Retinal Camera', href: '/catalog?category=Retinal+Camera', icon: Camera, count: '5+ Models' },
-                    { name: 'Visual Field', href: '/catalog?category=Visual+Field', icon: Grid3X3, count: '4+ Models' },
-                    { name: 'Refractometers', href: '/catalog?category=Refractometers', icon: Ruler, count: '7+ Models' },
-                    { name: 'Examination', href: '/catalog?category=Examination', icon: Search, count: '10+ Models' },
-                  ].map((sub) => (
-                    <Link key={sub.name} href={sub.href} className="flex items-center gap-2.5 rounded-lg border border-border/50 p-3 transition-all hover:bg-accent/5 hover:border-accent/20">
-                      <sub.icon className="h-4 w-4 text-muted-foreground group-hover:text-accent" />
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{sub.name}</p>
-                        <p className="text-xs text-muted-foreground">{sub.count}</p>
+          {loading ? (
+            <div className="mt-12 flex justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : equipmentCategories.length === 0 ? (
+            <div className="mt-12 text-center text-muted-foreground">
+              <p className="text-lg">No categories configured yet. An admin can create categories in the admin panel.</p>
+              <Button asChild variant="outline" className="mt-4">
+                <Link href="/catalog">Browse All Equipment</Link>
+              </Button>
+            </div>
+          ) : (
+            <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2">
+              {equipmentCategories.map((cat) => {
+                const CatIcon = getIconForCategory(cat.name);
+                // Show up to 5 subcategories on the card
+                const displaySubs = (cat.subcategoriesList || []).slice(0, 5);
+                const remainingCount = Math.max(0, (cat.subcategoriesList || []).length - 5);
+
+                return (
+                  <Card key={cat.id} className="group overflow-hidden border-2 transition-all hover:shadow-xl hover:border-accent/30">
+                    <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5 pb-2">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-accent/10 text-accent">
+                          <CatIcon className="h-6 w-6" />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-bold text-foreground">{cat.name}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {(cat.subcategoriesList || []).length} subcategories available
+                          </p>
+                        </div>
                       </div>
-                    </Link>
-                  ))}
-                </div>
-                <Button asChild variant="outline" className="mt-4 w-full whitespace-nowrap">
-                  <Link href="/catalog?parentCategory=Ophthalmology+Equipment">
-                    View All Ophthalmology Equipment
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-          
-          {/* Parts & Accessories CTA */}
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      <div className="grid grid-cols-2 gap-3">
+                        {displaySubs.map((sub) => {
+                          const SubIcon = getIconForSubcategory(sub.name);
+                          const encodedCat = encodeURIComponent(cat.name);
+                          const encodedSub = encodeURIComponent(sub.name);
+                          return (
+                            <Link
+                              key={sub.name}
+                              href={`/catalog?parentCategory=${encodedCat}&category=${encodedSub}`}
+                              className="flex items-center gap-2.5 rounded-lg border border-border/50 p-3 transition-all hover:bg-accent/5 hover:border-accent/20"
+                            >
+                              <SubIcon className="h-4 w-4 text-muted-foreground group-hover:text-accent shrink-0" />
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-foreground truncate">{sub.name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {sub.count > 0 ? `${sub.count}+ Models` : 'Coming Soon'}
+                                </p>
+                              </div>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                      {remainingCount > 0 && (
+                        <Button asChild variant="outline" className="mt-3 w-full">
+                          <Link href={`/catalog?parentCategory=${encodeURIComponent(cat.name)}`}>
+                            +{remainingCount} more subcategories
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </Link>
+                        </Button>
+                      )}
+                      <Button asChild variant="outline" className="mt-4 w-full whitespace-nowrap">
+                        <Link href={`/catalog?parentCategory=${encodeURIComponent(cat.name)}`}>
+                          View All {cat.name}
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Parts & Accessories — Dynamic from categories or fallback link */}
           <div className="mt-8 text-center">
-            <Link href="/parts-accessories" className="inline-flex">
-              <Card className="inline-flex items-center gap-4 px-8 py-4 cursor-pointer transition-all hover:shadow-lg hover:border-accent/30">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10 text-accent">
-                  <Wrench className="h-5 w-5" />
-                </div>
-                <div className="text-left">
-                  <p className="font-semibold text-foreground">Parts & Accessories</p>
-                  <p className="text-sm text-muted-foreground">100+ replacement parts, coils, detectors, and accessories</p>
-                </div>
-                <ArrowRight className="h-5 w-5 text-muted-foreground ml-4" />
-              </Card>
-            </Link>
+            {partsCategory && (partsCategory.subcategoriesList || []).length > 0 ? (
+              <Link href="/parts-accessories" className="inline-flex">
+                <Card className="inline-flex items-center gap-4 px-8 py-4 cursor-pointer transition-all hover:shadow-lg hover:border-accent/30">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10 text-accent">
+                    <Wrench className="h-5 w-5" />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-semibold text-foreground">{partsCategory.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {(partsCategory.subcategoriesList || []).length} categories, {(partsCategory.subcategoriesList || []).reduce((sum, s) => sum + s.count, 0)}+ parts
+                    </p>
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-muted-foreground ml-4" />
+                </Card>
+              </Link>
+            ) : (
+              <Link href="/parts-accessories" className="inline-flex">
+                <Card className="inline-flex items-center gap-4 px-8 py-4 cursor-pointer transition-all hover:shadow-lg hover:border-accent/30">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10 text-accent">
+                    <Wrench className="h-5 w-5" />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-semibold text-foreground">Parts & Accessories</p>
+                    <p className="text-sm text-muted-foreground">Replacement parts, coils, detectors, and accessories</p>
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-muted-foreground ml-4" />
+                </Card>
+              </Link>
+            )}
           </div>
         </div>
       </section>

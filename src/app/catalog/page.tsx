@@ -22,6 +22,12 @@ import {
   Grid3X3,
   Ruler,
   ShoppingCart,
+  Wrench,
+  Package,
+  Cpu,
+  CircleDot,
+  Cable,
+  Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -64,41 +70,66 @@ interface Product {
   subCategory?: string | null;
 }
 
-/* ── Constants ── */
-const MAIN_CATEGORIES = [
-  {
-    name: 'Imaging Equipment',
-    subcategories: ['CT', 'MRI', 'X-Ray', 'Ultrasound', 'Mammography', 'C-Arm', 'DXA'],
-  },
-  {
-    name: 'Ophthalmology Equipment',
-    subcategories: ['OCT', 'Retinal Camera', 'Visual Field', 'Refractometers', 'Examination'],
-  },
-] as const;
+interface SubcategoryWithCount {
+  name: string;
+  count: number;
+}
 
-const ALL_SUBCATEGORIES = [
-  ...MAIN_CATEGORIES[0].subcategories,
-  ...MAIN_CATEGORIES[1].subcategories,
-];
-const CONDITIONS = ['New', 'Refurbished'] as const;
+interface Category {
+  id: string;
+  name: string;
+  subcategories: string;
+  subcategoriesList: SubcategoryWithCount[];
+}
 
-const CATEGORY_ICONS: Record<string, React.ElementType> = {
-  CT: MonitorSmartphone,
-  MRI: Activity,
-  'X-Ray': HeartPulse,
-  Ultrasound: Stethoscope,
-  Mammography: ShieldCheck,
-  'C-Arm': MonitorSmartphone,
-  DXA: Activity,
-  OCT: ShieldCheck,
-  'Retinal Camera': Camera,
-  'Visual Field': Grid3X3,
-  Refractometers: Ruler,
-  Examination: Search,
-  'O-Arm': MonitorSmartphone,
+/* ── Icon mapping for dynamic categories ── */
+const SUBCATEGORY_ICON_MAP: Record<string, React.ElementType> = {
+  'ct': MonitorSmartphone,
+  'mri': Activity,
+  'x-ray': HeartPulse,
+  'ultrasound': Stethoscope,
+  'mammography': ShieldCheck,
+  'c-arm': MonitorSmartphone,
+  'dxa': Activity,
+  'o-arm': MonitorSmartphone,
+  'oct': ShieldCheck,
+  'retinal camera': Camera,
+  'visual field': Grid3X3,
+  'refractometers': Ruler,
+  'examination': Search,
 };
 
-/* ── Category → Real Product Image Mapping ── */
+const PARTS_ICON_MAP: Record<string, React.ElementType> = {
+  'coil': Cpu,
+  'tube': CircleDot,
+  'probe': Package,
+  'lens': Eye,
+  'cable': Cable,
+  'power': Zap,
+  'connector': Cable,
+  'supply': Zap,
+};
+
+function getIconForSubcategory(name: string): React.ElementType {
+  const key = name.toLowerCase().trim();
+  for (const [k, icon] of Object.entries(SUBCATEGORY_ICON_MAP)) {
+    if (key.includes(k)) return icon;
+  }
+  for (const [k, icon] of Object.entries(PARTS_ICON_MAP)) {
+    if (key.includes(k)) return icon;
+  }
+  return Wrench;
+}
+
+function getCategoryIcon(name: string): React.ElementType {
+  const key = name.toLowerCase().trim();
+  for (const [k, icon] of Object.entries(SUBCATEGORY_ICON_MAP)) {
+    if (key.includes(k)) return icon;
+  }
+  return MonitorSmartphone;
+}
+
+/* ── Category Images & Weights (kept as fallback defaults) ── */
 const CATEGORY_IMAGES: Record<string, string[]> = {
   CT: ['/images/products/ge-revolution-ct.jpg', '/images/products/siemens-somatom-ct.jpg', '/images/products/toshiba-aquilion-ct.jpg'],
   MRI: ['/images/products/siemens-magnetom-mri.jpg', '/images/products/philips-ambition-mri.jpg', '/images/products/hitachi-echelon-mri.jpg', '/images/products/toshiba-vantage-mri.jpg'],
@@ -116,19 +147,10 @@ const CATEGORY_IMAGES: Record<string, string[]> = {
 };
 
 const CATEGORY_WEIGHTS: Record<string, number> = {
-  CT: 5000,
-  MRI: 8000,
-  'X-Ray': 3000,
-  Ultrasound: 300,
-  Mammography: 2000,
-  'C-Arm': 1500,
-  DXA: 2000,
-  OCT: 20,
-  'Retinal Camera': 30,
-  'Visual Field': 40,
-  Refractometers: 15,
-  Examination: 25,
-  'O-Arm': 3000,
+  CT: 5000, MRI: 8000, 'X-Ray': 3000, Ultrasound: 300,
+  Mammography: 2000, 'C-Arm': 1500, DXA: 2000, OCT: 20,
+  'Retinal Camera': 30, 'Visual Field': 40, Refractometers: 15,
+  Examination: 25, 'O-Arm': 3000,
 };
 
 const FREIGHT_CATEGORIES = ['CT', 'MRI', 'X-Ray'];
@@ -136,7 +158,6 @@ const FREIGHT_CATEGORIES = ['CT', 'MRI', 'X-Ray'];
 function getCategoryImage(category: string, productName: string): string {
   const images = CATEGORY_IMAGES[category];
   if (!images) return '/images/products/ge-revolution-ct.jpg';
-  // Use product name to deterministically pick an image from the array
   const index = Math.abs(productName.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)) % images.length;
   return images[index];
 }
@@ -224,15 +245,12 @@ function QuickBuyButton({ productId }: { productId: string }) {
 
 /* ── Product Card ── */
 function ProductCard({ product }: { product: Product }) {
-  const IconComponent = CATEGORY_ICONS[product.category] || MonitorSmartphone;
   const hasRealImage = product.imageUrl && !product.imageUrl.includes('placeholder');
-  // Always show a real image: use category image as fallback for placeholder
   const displayImage = hasRealImage ? product.imageUrl : getCategoryImage(product.category, product.name);
 
   return (
     <motion.div variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true }} transition={{ duration: 0.4 }}>
       <Card className="group h-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-teal-600/30">
-        {/* Product Image */}
         <div className="relative flex h-48 items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 overflow-hidden">
           <img
             src={displayImage}
@@ -250,7 +268,6 @@ function ProductCard({ product }: { product: Product }) {
         </div>
 
         <CardContent className="p-5 flex flex-col gap-3">
-          {/* Badges */}
           <div className="flex flex-wrap gap-2">
             <Badge variant="outline" className="text-xs border-primary/30 text-primary font-medium">
               {product.category}
@@ -266,22 +283,18 @@ function ProductCard({ product }: { product: Product }) {
             </Badge>
           </div>
 
-          {/* Name */}
           <Link href={`/catalog/${product.slug}`} className="group-hover:text-teal-600 transition-colors">
             <h3 className="font-semibold text-foreground leading-snug line-clamp-2">
               {product.name}
             </h3>
           </Link>
 
-          {/* Description */}
           <p className="text-sm text-muted-foreground line-clamp-2">{product.description}</p>
 
-          {/* Price */}
           <p className={`text-lg font-bold ${product.price ? 'text-foreground' : 'text-teal-600'}`}>
             {formatPrice(product.price)}
           </p>
 
-          {/* CTAs */}
           <div className="flex flex-wrap gap-2 pt-1">
             <Button asChild variant="outline" size="sm" className="flex-1 min-w-[120px]">
               <Link href={`/catalog/${product.slug}`}>
@@ -295,8 +308,8 @@ function ProductCard({ product }: { product: Product }) {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                const hasRealImage = product.imageUrl && !product.imageUrl.includes('placeholder');
-                const displayImg = hasRealImage ? product.imageUrl : getCategoryImage(product.category, product.name);
+                const hasRealImg = product.imageUrl && !product.imageUrl.includes('placeholder');
+                const displayImg = hasRealImg ? product.imageUrl : getCategoryImage(product.category, product.name);
                 useCartStore.getState().addItem({
                   id: crypto.randomUUID(),
                   productId: product.id,
@@ -350,6 +363,7 @@ function GetQuoteDialog({ productId, productName }: { productId: string; product
 
 /* ── Filter Sidebar Content ── */
 function FilterContent({
+  categories,
   selectedCategories,
   selectedConditions,
   onCategoryChange,
@@ -357,6 +371,7 @@ function FilterContent({
   onClear,
   hasFilters,
 }: {
+  categories: Category[];
   selectedCategories: string[];
   selectedConditions: string[];
   onCategoryChange: (category: string) => void;
@@ -364,6 +379,12 @@ function FilterContent({
   onClear: () => void;
   hasFilters: boolean;
 }) {
+  // Filter out "Parts & Accessories" from catalog filters
+  const filterCategories = categories.filter(c => {
+    const n = c.name.toLowerCase();
+    return !n.includes('part') && !n.includes('accessory');
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -376,23 +397,26 @@ function FilterContent({
         )}
       </div>
 
-      {/* Categories */}
+      {/* Dynamic Categories from API */}
       <div>
         <h4 className="text-sm font-medium text-foreground mb-3">Category</h4>
         <div className="space-y-4">
-          {MAIN_CATEGORIES.map((mainCat) => (
-            <div key={mainCat.name}>
+          {filterCategories.map((mainCat) => (
+            <div key={mainCat.id}>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{mainCat.name}</p>
               <div className="space-y-2.5">
-                {mainCat.subcategories.map((sub) => (
-                  <label key={sub} className="flex items-center gap-2.5 cursor-pointer group">
+                {(mainCat.subcategoriesList || []).map((sub) => (
+                  <label key={sub.name} className="flex items-center gap-2.5 cursor-pointer group">
                     <Checkbox
-                      checked={selectedCategories.includes(sub)}
-                      onCheckedChange={() => onCategoryChange(sub)}
+                      checked={selectedCategories.includes(sub.name)}
+                      onCheckedChange={() => onCategoryChange(sub.name)}
                       className="border-slate-300 data-[state=checked]:bg-teal-600 data-[state=checked]:border-teal-600"
                     />
                     <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
-                      {sub}
+                      {sub.name}
+                      {sub.count > 0 && (
+                        <span className="ml-1 text-xs text-muted-foreground/60">({sub.count})</span>
+                      )}
                     </span>
                   </label>
                 ))}
@@ -406,7 +430,7 @@ function FilterContent({
       <div>
         <h4 className="text-sm font-medium text-foreground mb-3">Condition</h4>
         <div className="space-y-2.5">
-          {CONDITIONS.map((cond) => (
+          {['New', 'Refurbished'].map((cond) => (
             <label key={cond} className="flex items-center gap-2.5 cursor-pointer group">
               <Checkbox
                 checked={selectedConditions.includes(cond)}
@@ -428,36 +452,50 @@ function FilterContent({
 function CatalogContent() {
   const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  // Track the parentCategory from the URL for API-level filtering
   const urlParentCategory = searchParams.get('parentCategory');
+
+  // Fetch categories from API
+  useEffect(() => {
+    fetch('/api/categories')
+      .then(res => res.json())
+      .then(data => setCategories(data.categories || []))
+      .catch(() => {});
+  }, []);
+
+  // Build dynamic mapping from category names to subcategory lists
+  const getSubcategoriesForParent = useCallback((parentName: string): string[] => {
+    const cat = categories.find(c => c.name === parentName);
+    if (cat && cat.subcategoriesList) {
+      return cat.subcategoriesList.map(s => s.name);
+    }
+    return [];
+  }, [categories]);
 
   // Handle parentCategory and category from URL
   useEffect(() => {
     const parentCat = searchParams.get('parentCategory');
     const singleCat = searchParams.get('category');
     if (parentCat) {
-      const mapping: Record<string, string[]> = {
-        'Ophthalmology': ['OCT', 'Retinal Camera', 'Visual Field', 'Refractometers', 'Examination'],
-        'Ophthalmology Equipment': ['OCT', 'Retinal Camera', 'Visual Field', 'Refractometers', 'Examination'],
-        'Imaging': ['CT', 'MRI', 'X-Ray', 'Ultrasound', 'Mammography', 'C-Arm', 'DXA'],
-        'Imaging Equipment': ['CT', 'MRI', 'X-Ray', 'Ultrasound', 'Mammography', 'C-Arm', 'DXA'],
-      };
-      // If the API already filtered by parentCategory, use the mapping for checkboxes
-      const cats = mapping[parentCat];
-      if (cats) {
+      const cats = getSubcategoriesForParent(parentCat);
+      if (cats.length > 0) {
         setSelectedCategories(cats);
+      } else {
+        // Fallback: if we don't have categories loaded yet, try single category
+        if (singleCat) {
+          setSelectedCategories([singleCat]);
+        }
       }
     } else if (singleCat) {
-      // Handle single category from URL (e.g., ?category=OCT, ?category=Retinal+Camera)
       setSelectedCategories([singleCat]);
     }
-  }, [searchParams]);
+  }, [searchParams, getSubcategoriesForParent]);
 
   const hasFilters = selectedCategories.length > 0 || selectedConditions.length > 0;
 
@@ -467,7 +505,6 @@ function CatalogContent() {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
 
-      // If we have a parentCategory from URL, pass it to the API for server-side filtering
       if (urlParentCategory) {
         params.set('parentCategory', urlParentCategory);
       } else if (selectedCategories.length === 1) {
@@ -481,8 +518,6 @@ function CatalogContent() {
         const data = await res.json();
         let filtered = data.products;
 
-        // Client-side filtering for multiple categories/conditions
-        // (only when not using parentCategory server-side filter)
         if (!urlParentCategory && selectedCategories.length > 1) {
           filtered = filtered.filter((p: Product) => selectedCategories.includes(p.category));
         }
@@ -561,7 +596,6 @@ function CatalogContent() {
                 className="pl-10 h-11"
               />
             </div>
-            {/* Mobile Filter Button */}
             <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
               <SheetTrigger asChild>
                 <Button variant="outline" className="lg:hidden h-11">
@@ -578,6 +612,7 @@ function CatalogContent() {
                 </SheetHeader>
                 <div className="mt-6">
                   <FilterContent
+                    categories={categories}
                     selectedCategories={selectedCategories}
                     selectedConditions={selectedConditions}
                     onCategoryChange={(cat) => { handleCategoryChange(cat); }}
@@ -623,6 +658,7 @@ function CatalogContent() {
             <aside className="hidden lg:block w-56 shrink-0">
               <div className="sticky top-24">
                 <FilterContent
+                  categories={categories}
                   selectedCategories={selectedCategories}
                   selectedConditions={selectedConditions}
                   onCategoryChange={handleCategoryChange}
