@@ -96,22 +96,25 @@ export default function PartsAccessoriesPage() {
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {(partsCategory.subcategoriesList || []).map((sub) => {
                 const PartIcon = getIconForPart(sub.name);
+                const href = `/catalog?category=${encodeURIComponent(sub.name)}`;
                 return (
-                  <Card key={sub.name} className="group cursor-pointer transition-all hover:shadow-lg hover:border-accent/30">
-                    <CardContent className="flex items-start gap-4 p-6">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/5 text-primary transition-colors group-hover:bg-accent/10 group-hover:text-accent">
-                        <PartIcon className="h-6 w-6" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="font-semibold text-foreground">{sub.name}</h3>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {sub.count > 0
-                            ? `${sub.count} part${sub.count !== 1 ? 's' : ''} available`
-                            : 'Available on request'}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <Link key={sub.name} href={href}>
+                    <Card className="group cursor-pointer transition-all hover:shadow-lg hover:border-accent/30">
+                      <CardContent className="flex items-start gap-4 p-6">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/5 text-primary transition-colors group-hover:bg-accent/10 group-hover:text-accent">
+                          <PartIcon className="h-6 w-6" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-semibold text-foreground">{sub.name}</h3>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {sub.count > 0
+                              ? `${sub.count} part${sub.count !== 1 ? 's' : ''} available`
+                              : 'Available on request'}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
                 );
               })}
             </div>

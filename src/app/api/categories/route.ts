@@ -24,7 +24,7 @@ export async function GET() {
     try {
       const rows = await db.product.groupBy({
         by: ['subCategory'],
-        where: { status: 'published', subCategory: { not: null, not: '' } },
+        where: { status: 'active', subCategory: { not: null, not: '' } },
         _count: true,
       });
       for (const row of rows) {

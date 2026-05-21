@@ -3179,6 +3179,7 @@ export default function AdminPage() {
                   <SelectContent>
                     <SelectItem value="New">New</SelectItem>
                     <SelectItem value="Refurbished">Refurbished</SelectItem>
+                    <SelectItem value="Used">Used</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

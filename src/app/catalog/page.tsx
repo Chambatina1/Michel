@@ -430,7 +430,7 @@ function FilterContent({
       <div>
         <h4 className="text-sm font-medium text-foreground mb-3">Condition</h4>
         <div className="space-y-2.5">
-          {['New', 'Refurbished'].map((cond) => (
+          {['New', 'Refurbished', 'Used'].map((cond) => (
             <label key={cond} className="flex items-center gap-2.5 cursor-pointer group">
               <Checkbox
                 checked={selectedConditions.includes(cond)}
@@ -482,15 +482,14 @@ function CatalogContent() {
   useEffect(() => {
     const parentCat = searchParams.get('parentCategory');
     const singleCat = searchParams.get('category');
-    if (parentCat) {
+    if (parentCat && singleCat) {
+      // Clicking a specific subcategory link → filter to that one only
+      setSelectedCategories([singleCat]);
+    } else if (parentCat) {
+      // Clicking "View All Imaging Equipment" → select all subcategories of that parent
       const cats = getSubcategoriesForParent(parentCat);
       if (cats.length > 0) {
         setSelectedCategories(cats);
-      } else {
-        // Fallback: if we don't have categories loaded yet, try single category
-        if (singleCat) {
-          setSelectedCategories([singleCat]);
-        }
       }
     } else if (singleCat) {
       setSelectedCategories([singleCat]);
@@ -505,7 +504,14 @@ function CatalogContent() {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
 
-      if (urlParentCategory) {
+      // Read URL category param for specific subcategory filtering
+      const urlCategory = searchParams.get('category');
+
+      if (urlCategory) {
+        // Specific subcategory clicked → filter by exact category field
+        params.set('category', urlCategory);
+      } else if (urlParentCategory && selectedCategories.length > 1) {
+        // "View All" clicked → filter by parentCategory
         params.set('parentCategory', urlParentCategory);
       } else if (selectedCategories.length === 1) {
         params.set('category', selectedCategories[0]);
