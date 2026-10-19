@@ -21,7 +21,7 @@ COMPANY INFORMATION:
 - Phone: +1 (305) 244-9340
 - Email: michelgg0102780@gmail.com
 - Hours: Monday - Friday, 8:00 AM - 6:00 PM CST
-- Website: https://ps-medical-devices.onrender.com
+- Website: https://psmedicaldevices.com
 - Experience: Over 15 years serving hospitals, imaging centers, and clinics
 
 PRODUCT CATEGORIES:

@@ -111,7 +111,7 @@ export default function RootLayout({
               "@type": "MedicalBusiness",
               "name": "P&S Medical Device Inc.",
               "description": "Premium medical imaging equipment sales, expert advisory, repair services, and equipment buybacks.",
-              "url": "https://ps-medical-devices.onrender.com",
+              "url": "https://psmedicaldevices.com",
               "telephone": "+1-305-244-9340",
               "email": "info@psmedicaldevices.com",
               "address": {
@@ -135,7 +135,7 @@ export default function RootLayout({
               },
               "sameAs": [],
               "priceRange": "$$",
-              "image": "https://ps-medical-devices.onrender.com/images/logo.jpeg"
+              "image": "https://psmedicaldevices.com/images/logo.jpeg"
             })
           }}
         />
