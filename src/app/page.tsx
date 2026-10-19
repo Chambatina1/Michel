@@ -171,13 +171,26 @@ export default function HomePage() {
       {/* Trust Bar */}
       <TrustBar />
 
-      {/* Hero Section with Banner Image */}
+      {/* Hero Section with Background Video */}
       <section className="relative overflow-hidden min-h-[520px]">
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: "url('/images/hero-banner.jpg')" }}
+          style={{ backgroundImage: "url('/videos/hero-poster.jpg')" }}
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/90 via-primary/70 to-primary/50" />
+        <video
+          className="absolute inset-0 h-full w-full object-cover motion-reduce:hidden"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+          poster="/videos/hero-poster.jpg"
+          aria-hidden="true"
+        >
+          <source src="/videos/hero.webm" type="video/webm" />
+          <source src="/videos/hero.mp4" type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/85 via-primary/60 to-primary/40" />
         <div className="relative mx-auto flex min-h-[520px] max-w-7xl flex-col items-center justify-center px-4 py-20 text-center sm:px-6 sm:py-28 lg:px-8">
           <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
             <HeartPulse className="h-3.5 w-3.5" />

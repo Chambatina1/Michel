@@ -35,11 +35,13 @@ self.addEventListener('fetch', (event) => {
 
   // Never cache API calls, the admin panel, other origins or non-GET requests:
   // stale copies made edited or deleted products keep showing up.
+  // Videos are skipped too: Safari needs real range (206) responses to play them.
   if (
     event.request.method !== 'GET' ||
     url.origin !== self.location.origin ||
     url.pathname.startsWith('/api/') ||
-    url.pathname.startsWith('/admin')
+    url.pathname.startsWith('/admin') ||
+    url.pathname.startsWith('/videos/')
   ) {
     return;
   }
