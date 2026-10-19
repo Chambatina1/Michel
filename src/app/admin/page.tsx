@@ -322,6 +322,7 @@ export default function AdminPage() {
 
   // Filters
   const [leadStatusFilter, setLeadStatusFilter] = useState('all');
+  const [leadTypeFilter, setLeadTypeFilter] = useState('all');
   const [productSearch, setProductSearch] = useState('');
   const [productStatusFilter, setProductStatusFilter] = useState('all');
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
@@ -1761,7 +1762,10 @@ export default function AdminPage() {
   /* ═══════════════════════════════════════════════════════
    ADMIN LAYOUT
    ═══════════════════════════════════════════════════════ */
-  const filteredLeads = leadStatusFilter === 'all' ? leads : leads.filter((l) => l.status === leadStatusFilter);
+  const filteredLeads = leads.filter((l) =>
+    (leadStatusFilter === 'all' || l.status === leadStatusFilter) &&
+    (leadTypeFilter === 'all' || (leadTypeFilter === 'newsletter' ? l.type === 'newsletter' : l.type !== 'newsletter'))
+  );
   const filteredSellRequests = sellStatusFilter === 'all' ? sellRequests : sellRequests.filter((s) => s.status === sellStatusFilter);
 
   return (
@@ -2431,6 +2435,16 @@ export default function AdminPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Filter className="h-4 w-4 text-gray-400" />
+                      <Select value={leadTypeFilter} onValueChange={setLeadTypeFilter}>
+                        <SelectTrigger className="w-[160px]">
+                          <SelectValue placeholder="Filter type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos los tipos</SelectItem>
+                          <SelectItem value="newsletter">Suscriptores</SelectItem>
+                          <SelectItem value="other">Cotizaciones y otros</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <Select value={leadStatusFilter} onValueChange={setLeadStatusFilter}>
                         <SelectTrigger className="w-[160px]">
                           <SelectValue placeholder="Filter status" />
@@ -2456,7 +2470,7 @@ export default function AdminPage() {
                               <TableHead className="pl-4">Name</TableHead>
                               <TableHead>Email</TableHead>
                               <TableHead>Type</TableHead>
-                              <TableHead>Product</TableHead>
+                              <TableHead>Product / Code</TableHead>
                               <TableHead>Status</TableHead>
                               <TableHead>Date</TableHead>
                               <TableHead className="pr-4">Actions</TableHead>
@@ -3103,6 +3117,7 @@ export default function AdminPage() {
                       { id: 'messages', label: 'Mensajes', icon: MessageSquare },
                       { id: 'whatsapp', label: 'WhatsApp', icon: Phone },
                       { id: 'seo', label: 'SEO', icon: Search },
+                      { id: 'promo', label: 'Promocion Suscriptores', icon: Tag },
                     ].map(sec => (
                       <Button key={sec.id} variant={settingsSection === sec.id ? 'default' : 'outline'} size="sm" onClick={() => setSettingsSection(sec.id)} className="gap-1.5"><sec.icon className="h-3.5 w-3.5" />{sec.label}</Button>
                     ))}
@@ -3127,6 +3142,26 @@ export default function AdminPage() {
                   )}
                   {settingsSection === 'seo' && (
                     <Card className="border-0 shadow-sm"><CardHeader><CardTitle className="text-base flex items-center gap-2"><Search className="h-4 w-4" />SEO (Meta Tags)</CardTitle></CardHeader><CardContent className="space-y-4"><div className="space-y-2"><Label>Meta Titulo</Label><Input value={settings.meta_title || ''} onChange={e => setSettings({...settings, meta_title: e.target.value})} placeholder="PS Medical Devices - Equipos Medicos" /></div><div className="space-y-2"><Label>Meta Descripcion</Label><Textarea value={settings.meta_description || ''} onChange={e => setSettings({...settings, meta_description: e.target.value})} placeholder="PS Medical Devices ofrece equipos medicos de primera calidad..." rows={3} /></div><div className="space-y-2"><Label>Meta Keywords</Label><Input value={settings.meta_keywords || ''} onChange={e => setSettings({...settings, meta_keywords: e.target.value})} placeholder="equipos medicos, CT, MRI, ultrasound, refurbished" /></div></CardContent></Card>
+                  )}
+                  {settingsSection === 'promo' && (
+                    <Card className="border-0 shadow-sm">
+                      <CardHeader><CardTitle className="text-base flex items-center gap-2"><Tag className="h-4 w-4" />Promocion para Suscriptores</CardTitle></CardHeader>
+                      <CardContent className="space-y-4">
+                        <p className="text-sm text-gray-500">Barra superior y ventana emergente que piden nombre y email y entregan un codigo de descuento de un solo uso, valido solo en partes y accesorios (no en equipos). Los suscriptores aparecen en Leads con tipo &quot;newsletter&quot;; el estado pasa a Converted cuando usan el codigo.</p>
+                        <div className="flex items-center justify-between rounded-lg border p-3"><div><Label>Promocion activa</Label><p className="text-xs text-gray-500">Muestra la barra y la ventana en el sitio</p></div><Switch checked={(settings.promo_enabled || 'true') !== 'false'} onCheckedChange={v => setSettings({...settings, promo_enabled: v ? 'true' : 'false'})} /></div>
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                          <div className="space-y-2"><Label>Porcentaje de descuento (%)</Label><Input type="number" min="1" max="100" value={settings.promo_percent || ''} onChange={e => setSettings({...settings, promo_percent: e.target.value})} placeholder="5" /></div>
+                          <div className="space-y-2"><Label>Segundos antes de mostrar la ventana</Label><Input type="number" min="0" value={settings.promo_popup_delay || ''} onChange={e => setSettings({...settings, promo_popup_delay: e.target.value})} placeholder="8" /></div>
+                        </div>
+                        <div className="space-y-2"><Label>Texto de la barra superior</Label><Input value={settings.promo_bar_text || ''} onChange={e => setSettings({...settings, promo_bar_text: e.target.value})} placeholder="Subscribe & save 5% on parts and accessories" /></div>
+                        <div className="space-y-2"><Label>Titulo de la ventana</Label><Input value={settings.promo_title || ''} onChange={e => setSettings({...settings, promo_title: e.target.value})} placeholder="Subscribe & save 5% on parts and accessories" /></div>
+                        <div className="space-y-2"><Label>Subtitulo de la ventana</Label><Input value={settings.promo_subtitle || ''} onChange={e => setSettings({...settings, promo_subtitle: e.target.value})} placeholder="Your one-time code - parts & accessories only (equipment excluded)" /></div>
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                          <div className="space-y-2"><Label>Texto del boton</Label><Input value={settings.promo_button_text || ''} onChange={e => setSettings({...settings, promo_button_text: e.target.value})} placeholder="Get my 5% code" /></div>
+                          <div className="space-y-2"><Label>Mensaje junto al codigo</Label><Input value={settings.promo_success_text || ''} onChange={e => setSettings({...settings, promo_success_text: e.target.value})} placeholder="Use this code at checkout..." /></div>
+                        </div>
+                      </CardContent>
+                    </Card>
                   )}
                   <Button onClick={handleSaveSettings} className="gap-2 bg-teal-600 hover:bg-teal-700"><Save className="h-4 w-4" />Guardar Configuracion</Button>
                 </div>

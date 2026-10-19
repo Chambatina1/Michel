@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe, verifyWebhookSignature } from '@/lib/stripe';
 import { db } from '@/lib/db';
+import { markPromoCodeUsed } from '@/lib/promo';
 
 // Disable body parsing for webhooks - Stripe needs raw body for signature verification
 export async function POST(request: NextRequest) {
@@ -70,6 +71,9 @@ export async function POST(request: NextRequest) {
  * Handle successful checkout - update product status
  */
 async function handleCheckoutComplete(session: any) {
+  // Subscriber discount codes are one-time: mark the code as used
+  await markPromoCodeUsed(session.metadata?.discountCode);
+
   const productId = session.metadata?.productId;
 
   if (!productId) {

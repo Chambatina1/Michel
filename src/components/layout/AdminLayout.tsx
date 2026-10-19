@@ -5,6 +5,7 @@ import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { AIChatWidget } from '@/components/chat/AIChatWidget';
 import { WhatsAppButton } from '@/components/chat/WhatsAppButton';
+import { SubscribePromo } from '@/components/layout/SubscribePromo';
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -16,6 +17,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      <SubscribePromo />
       <Navbar />
       <main className="flex-1">{children}</main>
       <Footer />
