@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { normalizeProductInput, isUniqueSlugError } from '@/lib/product-input';
 
 export async function PATCH(
   request: NextRequest,
@@ -14,21 +15,32 @@ export async function PATCH(
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
 
-    const updateData: Record<string, unknown> = {};
-    const allowedFields = ['name', 'slug', 'category', 'condition', 'price', 'description', 'specs', 'features', 'imageUrl', 'images', 'videos', 'status', 'isFeatured', 'isNegotiable', 'parentCategory', 'subCategory'];
-    for (const field of allowedFields) {
-      if (body[field] !== undefined) {
-        if (field === 'specs') updateData.specs = typeof body[field] === 'string' ? body[field] : JSON.stringify(body[field]);
-        else if (field === 'features') updateData.features = typeof body[field] === 'string' ? body[field] : JSON.stringify(body[field]);
-        else if (field === 'images') updateData.images = typeof body[field] === 'string' ? body[field] : JSON.stringify(body[field]);
-        else if (field === 'videos') updateData.videos = typeof body[field] === 'string' ? body[field] : JSON.stringify(body[field]);
-        else updateData[field] = body[field];
+    let updateData: Record<string, unknown>;
+    try {
+      updateData = normalizeProductInput(body);
+    } catch (validationError) {
+      return NextResponse.json({ error: (validationError as Error).message }, { status: 400 });
+    }
+
+    for (const field of ['name', 'slug', 'condition', 'description']) {
+      if (field in updateData && !updateData[field]) {
+        return NextResponse.json({ error: `"${field}" cannot be empty` }, { status: 400 });
+      }
+    }
+
+    if (updateData.slug && updateData.slug !== existing.slug) {
+      const clash = await db.product.findUnique({ where: { slug: updateData.slug as string } });
+      if (clash) {
+        return NextResponse.json({ error: `Another product already uses the slug "${updateData.slug}"` }, { status: 409 });
       }
     }
 
     const product = await db.product.update({ where: { id }, data: updateData });
     return NextResponse.json({ product });
   } catch (error) {
+    if (isUniqueSlugError(error)) {
+      return NextResponse.json({ error: 'Another product already uses this slug' }, { status: 409 });
+    }
     console.error('Error updating product:', error);
     return NextResponse.json({ error: 'Failed to update product' }, { status: 500 });
   }

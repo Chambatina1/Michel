@@ -1,4 +1,5 @@
-const CACHE_NAME = 'ps-medical-v2';
+// Bump the version to purge caches from older workers (v2 cached API responses)
+const CACHE_NAME = 'ps-medical-v3';
 const OFFLINE_URL = '/';
 
 const PRECACHE_URLS = [
@@ -30,6 +31,19 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+
+  // Never cache API calls, the admin panel, other origins or non-GET requests:
+  // stale copies made edited or deleted products keep showing up.
+  if (
+    event.request.method !== 'GET' ||
+    url.origin !== self.location.origin ||
+    url.pathname.startsWith('/api/') ||
+    url.pathname.startsWith('/admin')
+  ) {
+    return;
+  }
+
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request).catch(() => {
