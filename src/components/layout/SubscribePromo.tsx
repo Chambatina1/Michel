@@ -151,7 +151,7 @@ export function SubscribePromo() {
 
   const submitPopup = async (e: React.FormEvent) => {
     e.preventDefault();
-    await subscribe(popupName.trim(), popupEmail.trim());
+    if (await subscribe(popupName.trim(), popupEmail.trim())) setBarVisible(false);
   };
 
   return (
