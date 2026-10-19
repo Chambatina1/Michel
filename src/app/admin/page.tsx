@@ -107,6 +107,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
@@ -323,6 +324,10 @@ export default function AdminPage() {
   const [leadStatusFilter, setLeadStatusFilter] = useState('all');
   const [productSearch, setProductSearch] = useState('');
   const [productStatusFilter, setProductStatusFilter] = useState('all');
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkDeleteConfirmText, setBulkDeleteConfirmText] = useState('');
+  const [bulkWorking, setBulkWorking] = useState(false);
   const [sellStatusFilter, setSellStatusFilter] = useState('all');
 
   // AI Knowledge
@@ -1475,11 +1480,69 @@ export default function AdminPage() {
     return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
+  const bulkUpdateProductStatus = async (status: string) => {
+    if (selectedProductIds.length === 0) return;
+    setBulkWorking(true);
+    try {
+      const res = await fetch('/api/admin/products', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedProductIds, status }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success(status === 'inactive' ? `${data.count} equipos ocultos de la tienda` : `${data.count} equipos visibles en la tienda`);
+        setSelectedProductIds([]);
+        fetchDashboardData();
+      } else toast.error(data.error || 'No se pudieron actualizar los equipos');
+    } catch {
+      toast.error('No se pudieron actualizar los equipos');
+    } finally {
+      setBulkWorking(false);
+    }
+  };
+
+  const bulkDeleteProducts = async () => {
+    if (selectedProductIds.length === 0) return;
+    setBulkWorking(true);
+    try {
+      const res = await fetch('/api/admin/products', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedProductIds }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success(`${data.count} equipos eliminados`);
+        setSelectedProductIds([]);
+        setBulkDeleteOpen(false);
+        setBulkDeleteConfirmText('');
+        fetchDashboardData();
+        fetchCategories();
+      } else toast.error(data.error || 'No se pudieron eliminar los equipos');
+    } catch {
+      toast.error('No se pudieron eliminar los equipos');
+    } finally {
+      setBulkWorking(false);
+    }
+  };
+
   const productQuery = productSearch.trim().toLowerCase();
   const filteredProducts = products.filter((p) =>
     (productStatusFilter === 'all' || p.status === productStatusFilter) &&
     (!productQuery || [p.name, p.slug, p.category, p.parentCategory, p.subCategory].some((v) => v?.toLowerCase().includes(productQuery)))
   );
+  const allFilteredSelected = filteredProducts.length > 0 && filteredProducts.every((p) => selectedProductIds.includes(p.id));
+  const deletingAllProducts = selectedProductIds.length > 0 && selectedProductIds.length === products.length;
+  const toggleSelectAllFiltered = (checked: boolean) => {
+    const filteredIds = filteredProducts.map((p) => p.id);
+    setSelectedProductIds((prev) => checked
+      ? Array.from(new Set([...prev, ...filteredIds]))
+      : prev.filter((id) => !filteredIds.includes(id)));
+  };
+  const toggleSelectProduct = (id: string, checked: boolean) => {
+    setSelectedProductIds((prev) => checked ? [...prev, id] : prev.filter((x) => x !== id));
+  };
 
   const statusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -1962,13 +2025,32 @@ export default function AdminPage() {
                     </Select>
                   </div>
 
+                  {selectedProductIds.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-teal-200 bg-teal-50 px-4 py-2">
+                      <span className="text-sm font-medium text-teal-800">{selectedProductIds.length} seleccionados</span>
+                      <Button size="sm" variant="outline" disabled={bulkWorking} onClick={() => bulkUpdateProductStatus('inactive')} className="gap-1.5">
+                        <EyeOff className="h-3.5 w-3.5" /> Ocultar
+                      </Button>
+                      <Button size="sm" variant="outline" disabled={bulkWorking} onClick={() => bulkUpdateProductStatus('active')} className="gap-1.5">
+                        <Eye className="h-3.5 w-3.5" /> Mostrar
+                      </Button>
+                      <Button size="sm" variant="outline" disabled={bulkWorking} onClick={() => { setBulkDeleteConfirmText(''); setBulkDeleteOpen(true); }} className="gap-1.5 text-red-600 hover:text-red-700">
+                        <Trash2 className="h-3.5 w-3.5" /> Eliminar
+                      </Button>
+                      <Button size="sm" variant="ghost" disabled={bulkWorking} onClick={() => setSelectedProductIds([])}>Quitar selección</Button>
+                    </div>
+                  )}
+
                   <Card className="border-0 shadow-sm">
                     <CardContent className="p-0">
                       <div className="overflow-x-auto">
                         <Table>
                           <TableHeader>
                             <TableRow className="bg-gray-50/80">
-                              <TableHead className="pl-4">Name</TableHead>
+                              <TableHead className="w-10 pl-4">
+                                <Checkbox checked={allFilteredSelected} onCheckedChange={(v) => toggleSelectAllFiltered(v === true)} aria-label="Seleccionar todos" />
+                              </TableHead>
+                              <TableHead>Name</TableHead>
                               <TableHead>Parent Category</TableHead>
                               <TableHead>Subcategory</TableHead>
                               <TableHead>Condition</TableHead>
@@ -1981,7 +2063,10 @@ export default function AdminPage() {
                           <TableBody>
                             {filteredProducts.map((product) => (
                               <TableRow key={product.id} className={product.status === 'inactive' ? 'opacity-60' : undefined}>
-                                <TableCell className="pl-4 font-medium">{product.name}</TableCell>
+                                <TableCell className="pl-4">
+                                  <Checkbox checked={selectedProductIds.includes(product.id)} onCheckedChange={(v) => toggleSelectProduct(product.id, v === true)} aria-label={`Seleccionar ${product.name}`} />
+                                </TableCell>
+                                <TableCell className="font-medium">{product.name}</TableCell>
                                 <TableCell>{product.parentCategory || product.category || '—'}</TableCell>
                                 <TableCell>{product.subCategory || '—'}</TableCell>
                                 <TableCell>{product.condition}</TableCell>
@@ -2018,7 +2103,7 @@ export default function AdminPage() {
                             ))}
                             {filteredProducts.length === 0 && (
                               <TableRow>
-                                <TableCell colSpan={8} className="py-12 text-center text-gray-400">No products found</TableCell>
+                                <TableCell colSpan={9} className="py-12 text-center text-gray-400">No products found</TableCell>
                               </TableRow>
                             )}
                           </TableBody>
@@ -4561,6 +4646,33 @@ export default function AdminPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Product Delete Dialog */}
+      <AlertDialog open={bulkDeleteOpen} onOpenChange={(open) => { if (!bulkWorking) setBulkDeleteOpen(open); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar {selectedProductIds.length} equipos</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deletingAllProducts
+                ? 'Vas a eliminar TODOS los equipos de la tienda. Esta acción no se puede deshacer. Escribe ELIMINAR para confirmar.'
+                : 'Los equipos seleccionados se eliminarán de la tienda. Esta acción no se puede deshacer. Si solo quieres quitarlos de la tienda por ahora, usa Ocultar.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {deletingAllProducts && (
+            <Input value={bulkDeleteConfirmText} onChange={(e) => setBulkDeleteConfirmText(e.target.value)} placeholder="ELIMINAR" />
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkWorking}>Cancelar</AlertDialogCancel>
+            <Button
+              onClick={bulkDeleteProducts}
+              disabled={bulkWorking || (deletingAllProducts && bulkDeleteConfirmText.trim().toUpperCase() !== 'ELIMINAR')}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {bulkWorking ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Eliminar'}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

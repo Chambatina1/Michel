@@ -98,3 +98,46 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to create product' }, { status: 500 });
   }
 }
+
+function parseIds(body: unknown): string[] | null {
+  const ids = (body as { ids?: unknown })?.ids;
+  if (!Array.isArray(ids) || ids.length === 0 || !ids.every((id) => typeof id === 'string')) return null;
+  return ids as string[];
+}
+
+// Bulk status change: { ids: string[], status: string }
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const ids = parseIds(body);
+    if (!ids) return NextResponse.json({ error: 'No products selected' }, { status: 400 });
+
+    let data: Record<string, unknown>;
+    try {
+      data = normalizeProductInput({ status: body.status });
+    } catch (validationError) {
+      return NextResponse.json({ error: (validationError as Error).message }, { status: 400 });
+    }
+
+    const result = await db.product.updateMany({ where: { id: { in: ids } }, data });
+    return NextResponse.json({ count: result.count });
+  } catch (error) {
+    console.error('Error bulk updating products:', error);
+    return NextResponse.json({ error: 'Failed to update products' }, { status: 500 });
+  }
+}
+
+// Bulk delete: { ids: string[] }
+export async function DELETE(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const ids = parseIds(body);
+    if (!ids) return NextResponse.json({ error: 'No products selected' }, { status: 400 });
+
+    const result = await db.product.deleteMany({ where: { id: { in: ids } } });
+    return NextResponse.json({ count: result.count });
+  } catch (error) {
+    console.error('Error bulk deleting products:', error);
+    return NextResponse.json({ error: 'Failed to delete products' }, { status: 500 });
+  }
+}
