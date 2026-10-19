@@ -33,7 +33,9 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     const where: Record<string, unknown> = {};
+    // Hidden products never appear in the public store
     if (status) where.status = status;
+    else where.status = { not: 'inactive' };
 
     if (category) where.category = category;
     if (parentCategory) where.parentCategory = { contains: parentCategory };
@@ -58,35 +60,9 @@ export async function GET(request: NextRequest) {
       db.product.count({ where }),
     ]);
 
-    // If DB returns 0 products, merge with fallback so user always sees data
-    let products = dbProducts;
-    let mergedTotal = total;
-    if (dbProducts.length === 0 && total === 0) {
-      const fallbackFiltered = filterFallbackProducts(FALLBACK_PRODUCTS, fallbackOpts);
-      if (fallbackFiltered.length > 0) {
-        // Sort fallback results
-        fallbackFiltered.sort((a, b) => {
-          if (sort === 'price') {
-            return order === 'asc'
-              ? (a.price || 0) - (b.price || 0)
-              : (b.price || 0) - (a.price || 0);
-          }
-          if (sort === 'name') {
-            return order === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
-          }
-          return order === 'asc'
-            ? new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-            : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        });
-        const fbSkip = (page - 1) * limit;
-        products = fallbackFiltered.slice(fbSkip, fbSkip + limit);
-        mergedTotal = fallbackFiltered.length;
-      }
-    }
-
     return NextResponse.json({
-      products,
-      pagination: { page, limit, total: mergedTotal, totalPages: Math.ceil(mergedTotal / limit) },
+      products: dbProducts,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (dbError) {
     console.warn('DB unavailable, using fallback products:', (dbError as Error).message);

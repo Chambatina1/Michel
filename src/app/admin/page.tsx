@@ -17,6 +17,7 @@ import {
   Pencil,
   Trash2,
   Eye,
+  EyeOff,
   StarOff,
   Check,
   Ban,
@@ -320,6 +321,8 @@ export default function AdminPage() {
 
   // Filters
   const [leadStatusFilter, setLeadStatusFilter] = useState('all');
+  const [productSearch, setProductSearch] = useState('');
+  const [productStatusFilter, setProductStatusFilter] = useState('all');
   const [sellStatusFilter, setSellStatusFilter] = useState('all');
 
   // AI Knowledge
@@ -432,7 +435,7 @@ export default function AdminPage() {
     setDataLoading(true);
     try {
       const [productsRes, leadsRes, reviewsRes, sellRes] = await Promise.all([
-        fetch('/api/products?limit=500&status=all'),
+        fetch('/api/admin/products?limit=2000'),
         fetch('/api/leads?limit=100'),
         fetch('/api/reviews?admin=true&limit=100'),
         fetch('/api/sell-equipment?limit=100'),
@@ -442,6 +445,7 @@ export default function AdminPage() {
         productsRes.json(), leadsRes.json(), reviewsRes.json(), sellRes.json(),
       ]);
 
+      if (!productsRes.ok) toast.error(productsData.error || 'Failed to load products');
       const prods: Product[] = productsData.products || [];
       const lds: Lead[] = leadsData.leads || [];
       const revs: Review[] = reviewsData.reviews || [];
@@ -875,15 +879,40 @@ export default function AdminPage() {
   };
 
   const handleProductSubmit = async () => {
+    const missing: string[] = [];
+    if (!productForm.name.trim()) missing.push('Nombre');
+    if (!productForm.slug.trim()) missing.push('Slug');
+    if (!productForm.condition) missing.push('Condición');
+    if (!productForm.description.trim()) missing.push('Descripción');
+    const effectiveParent = customParentMode ? customParentValue.trim() : productForm.parentCategory;
+    if (!productForm.category && !productForm.subCategory && !effectiveParent) missing.push('Categoría');
+    if (missing.length > 0) {
+      toast.error(`Completa los campos: ${missing.join(', ')}`);
+      return;
+    }
+    for (const [field, label] of [['specs', 'Especificaciones'], ['features', 'Características']] as const) {
+      try {
+        if (productForm[field].trim()) JSON.parse(productForm[field]);
+      } catch {
+        toast.error(`${label}: el JSON no es válido`);
+        return;
+      }
+    }
+    if (productForm.price && !(parseFloat(productForm.price) >= 0)) {
+      toast.error('El precio debe ser un número positivo');
+      return;
+    }
+
     try {
       const payload = {
         ...productForm,
-        price: productForm.price ? parseFloat(productForm.price) : null,
+        price: productForm.isNegotiable || !productForm.price ? null : parseFloat(productForm.price),
+        category: productForm.category || productForm.subCategory || effectiveParent,
         images: productForm.images,
         videos: productForm.videos,
         specs: productForm.specs,
         features: productForm.features,
-        parentCategory: productForm.parentCategory || null,
+        parentCategory: effectiveParent || null,
         subCategory: productForm.subCategory || null,
       };
 
@@ -964,9 +993,12 @@ export default function AdminPage() {
         body: JSON.stringify({ status }),
       });
       if (res.ok) {
-        toast.success('Product status updated');
+        toast.success(status === 'inactive' ? 'Equipo oculto de la tienda' : status === 'active' ? 'Equipo visible en la tienda' : 'Product status updated');
         fetchDashboardData();
-      } else toast.error('Failed to update product status');
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || 'Failed to update product status');
+      }
     } catch {
       toast.error('Update failed');
     }
@@ -1023,7 +1055,8 @@ export default function AdminPage() {
         fetchServices();
         fetchCategories();
       } else {
-        toast.error('Failed to delete');
+        const data = res ? await res.json().catch(() => ({})) : {};
+        toast.error(data.error || 'Failed to delete');
       }
     } catch {
       toast.error('Delete failed');
@@ -1442,11 +1475,18 @@ export default function AdminPage() {
     return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
+  const productQuery = productSearch.trim().toLowerCase();
+  const filteredProducts = products.filter((p) =>
+    (productStatusFilter === 'all' || p.status === productStatusFilter) &&
+    (!productQuery || [p.name, p.slug, p.category, p.parentCategory, p.subCategory].some((v) => v?.toLowerCase().includes(productQuery)))
+  );
+
   const statusColor = (status: string) => {
     const colors: Record<string, string> = {
       active: 'bg-emerald-100 text-emerald-700 border-emerald-200',
       sold: 'bg-red-100 text-red-700 border-red-200',
       reserved: 'bg-amber-100 text-amber-700 border-amber-200',
+      inactive: 'bg-gray-100 text-gray-500 border-gray-300',
       new: 'bg-blue-100 text-blue-700 border-blue-200',
       contacted: 'bg-purple-100 text-purple-700 border-purple-200',
       qualified: 'bg-teal-100 text-teal-700 border-teal-200',
@@ -1896,11 +1936,30 @@ export default function AdminPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">Products</h3>
-                      <p className="text-sm text-gray-500">{products.length} total products</p>
+                      <p className="text-sm text-gray-500">
+                        {products.length} total products · {products.filter(p => p.status === 'active').length} activos · {products.filter(p => p.status === 'inactive').length} ocultos
+                      </p>
                     </div>
                     <Button onClick={() => openProductDialog()} className="gap-2 bg-teal-600 hover:bg-teal-700">
                       <Plus className="h-4 w-4" /> Add Product
                     </Button>
+                  </div>
+
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                      <Input value={productSearch} onChange={(e) => setProductSearch(e.target.value)} placeholder="Buscar por nombre, categoría o marca..." className="pl-9" />
+                    </div>
+                    <Select value={productStatusFilter} onValueChange={setProductStatusFilter}>
+                      <SelectTrigger className="sm:w-48"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todos los estados</SelectItem>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="reserved">Reserved</SelectItem>
+                        <SelectItem value="sold">Sold</SelectItem>
+                        <SelectItem value="inactive">Ocultos</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <Card className="border-0 shadow-sm">
@@ -1920,8 +1979,8 @@ export default function AdminPage() {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {products.map((product) => (
-                              <TableRow key={product.id}>
+                            {filteredProducts.map((product) => (
+                              <TableRow key={product.id} className={product.status === 'inactive' ? 'opacity-60' : undefined}>
                                 <TableCell className="pl-4 font-medium">{product.name}</TableCell>
                                 <TableCell>{product.parentCategory || product.category || '—'}</TableCell>
                                 <TableCell>{product.subCategory || '—'}</TableCell>
@@ -1929,7 +1988,7 @@ export default function AdminPage() {
                                 <TableCell>{product.isNegotiable ? <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200">Negociable</Badge> : (product.price ? `$${product.price.toLocaleString()}` : 'Contacto')}</TableCell>
                                 <TableCell>
                                   <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusColor(product.status)}`}>
-                                    {product.status}
+                                    {product.status === 'inactive' ? 'oculto' : product.status}
                                   </span>
                                 </TableCell>
                                 <TableCell>
@@ -1944,8 +2003,8 @@ export default function AdminPage() {
                                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openProductDialog(product)} title="Edit">
                                       <Pencil className="h-3.5 w-3.5" />
                                     </Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => updateProductStatus(product.id, product.status === 'active' ? 'reserved' : 'active')} title="Toggle Status">
-                                      <RefreshCw className="h-3.5 w-3.5" />
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => updateProductStatus(product.id, product.status === 'inactive' ? 'active' : 'inactive')} title={product.status === 'inactive' ? 'Mostrar en la tienda' : 'Ocultar de la tienda'}>
+                                      {product.status === 'inactive' ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
                                     </Button>
                                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleProductFeatured(product)} title="Toggle Featured">
                                       <Star className={`h-3.5 w-3.5 ${product.isFeatured ? 'fill-amber-400 text-amber-400' : ''}`} />
@@ -1957,9 +2016,9 @@ export default function AdminPage() {
                                 </TableCell>
                               </TableRow>
                             ))}
-                            {products.length === 0 && (
+                            {filteredProducts.length === 0 && (
                               <TableRow>
-                                <TableCell colSpan={9} className="py-12 text-center text-gray-400">No products found</TableCell>
+                                <TableCell colSpan={8} className="py-12 text-center text-gray-400">No products found</TableCell>
                               </TableRow>
                             )}
                           </TableBody>
@@ -3061,7 +3120,7 @@ export default function AdminPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2 col-span-2 sm:col-span-1">
                 <Label>Name</Label>
-                <Input value={productForm.name} onChange={(e) => setProductForm({ ...productForm, name: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') })} placeholder="Product name" />
+                <Input value={productForm.name} onChange={(e) => setProductForm({ ...productForm, name: e.target.value, slug: editingProduct ? productForm.slug : e.target.value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') })} placeholder="Product name" />
               </div>
               <div className="space-y-2 col-span-2 sm:col-span-1">
                 <Label>Slug</Label>
@@ -3198,6 +3257,7 @@ export default function AdminPage() {
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="reserved">Reserved</SelectItem>
                     <SelectItem value="sold">Sold</SelectItem>
+                    <SelectItem value="inactive">Oculto (no se muestra en la tienda)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
