@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { AdminLayout } from "@/components/layout/AdminLayout";
+import { SITE_URL, SITE_NAME, DEFAULT_OG_IMAGE } from "@/lib/site";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,7 +16,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "P&S Medical Device Inc. | Trusted Medical Equipment Partner",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "P&S Medical Device Inc. | Trusted Medical Equipment Partner",
+    template: "%s | P&S Medical Device Inc.",
+  },
   description:
     "Premium medical imaging equipment sales, expert advisory, repair services, and equipment buybacks. CT, MRI, X-Ray, Ultrasound, and Ophthalmology equipment.",
   keywords: [
@@ -32,7 +37,7 @@ export const metadata: Metadata = {
     "sell medical equipment",
     "P&S Medical Device Inc.",
   ],
-  authors: [{ name: "P&S Medical Device Inc." }],
+  authors: [{ name: SITE_NAME }],
   manifest: "/manifest.json",
   icons: {
     icon: [
@@ -49,15 +54,17 @@ export const metadata: Metadata = {
     title: "P&S Medical Device Inc. | Trusted Medical Equipment Partner",
     description:
       "Premium medical imaging equipment sales, expert advisory, repair services, and equipment buybacks. CT, MRI, X-Ray, Ultrasound, and Ophthalmology equipment.",
-    siteName: "P&S Medical Device Inc.",
+    siteName: SITE_NAME,
     type: "website",
     locale: "en_US",
+    images: [{ url: DEFAULT_OG_IMAGE, alt: SITE_NAME }],
   },
   twitter: {
     card: "summary_large_image",
     title: "P&S Medical Device Inc. | Trusted Medical Equipment Partner",
     description:
       "Premium medical imaging equipment sales, expert advisory, repair services, and equipment buybacks.",
+    images: [DEFAULT_OG_IMAGE],
   },
   robots: {
     index: true,
@@ -68,9 +75,12 @@ export const metadata: Metadata = {
     "apple-mobile-web-app-capable": "yes",
     "apple-mobile-web-app-status-bar-style": "default",
     "apple-mobile-web-app-title": "P&S Medical",
-    "theme-color": "#0891b2",
     "msapplication-TileColor": "#0891b2",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0891b2",
 };
 
 export default function RootLayout({
@@ -80,7 +90,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <meta name="theme-color" content="#0891b2" />
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
@@ -111,7 +120,7 @@ export default function RootLayout({
               "@type": "MedicalBusiness",
               "name": "P&S Medical Device Inc.",
               "description": "Premium medical imaging equipment sales, expert advisory, repair services, and equipment buybacks.",
-              "url": "https://psmedicaldevices.com",
+              "url": SITE_URL,
               "telephone": "+1-305-244-9340",
               "email": "info@psmedicaldevices.com",
               "address": {
@@ -135,7 +144,7 @@ export default function RootLayout({
               },
               "sameAs": [],
               "priceRange": "$$",
-              "image": "https://psmedicaldevices.com/images/logo.jpeg"
+              "image": `${SITE_URL}/images/logo.jpeg`
             })
           }}
         />
