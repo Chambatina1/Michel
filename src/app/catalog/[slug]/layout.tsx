@@ -18,12 +18,13 @@ interface ProductSeo {
 
 async function getProduct(slug: string): Promise<ProductSeo | null> {
   try {
+    // Hidden products are not shown in the store
     const product = await db.product.findUnique({ where: { slug } });
-    if (product) return product;
+    return product && product.status !== 'inactive' ? product : null;
   } catch {
-    // DB unavailable - fall through to fallback products
+    // DB unavailable - use fallback products, like the product API does
+    return FALLBACK_PRODUCTS.find((p) => p.slug === slug) ?? null;
   }
-  return FALLBACK_PRODUCTS.find((p) => p.slug === slug) ?? null;
 }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
