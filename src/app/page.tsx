@@ -208,6 +208,13 @@ export default function HomePage() {
           <p className="mt-6 max-w-2xl text-base leading-relaxed text-white/75 sm:text-lg">
             {heroSubtitle}
           </p>
+          <ul className="mt-6 flex flex-wrap items-center justify-center gap-2 text-sm font-medium text-white">
+            {['Cuban Engineers', 'Free Estimates', '5-Year Warranty'].map((item) => (
+              <li key={item} className="rounded-full border border-white/25 bg-white/10 px-4 py-1.5 backdrop-blur-sm">
+                {item}
+              </li>
+            ))}
+          </ul>
           <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row">
             <Button
               asChild

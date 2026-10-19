@@ -18,12 +18,16 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "P&S Medical Device Inc. | Trusted Medical Equipment Partner",
+    default: "Medical Equipment by Cuban Engineers | P&S Medical Device Inc.",
     template: "%s | P&S Medical Device Inc.",
   },
   description:
-    "Premium medical imaging equipment sales, expert advisory, repair services, and equipment buybacks. CT, MRI, X-Ray, Ultrasound, and Ophthalmology equipment.",
+    "Cuban engineers selling, repairing and buying CT, MRI, X-Ray, ultrasound and ophthalmology equipment. Free estimates and a 5-year warranty. Winter Park, FL.",
   keywords: [
+    "Cuban engineers medical equipment",
+    "ingenieros cubanos equipos médicos",
+    "free medical equipment estimate",
+    "5-year warranty medical equipment",
     "medical devices",
     "medical imaging equipment",
     "CT scanner",
@@ -51,9 +55,9 @@ export const metadata: Metadata = {
     ],
   },
   openGraph: {
-    title: "P&S Medical Device Inc. | Trusted Medical Equipment Partner",
+    title: "Medical Equipment by Cuban Engineers | P&S Medical Device Inc.",
     description:
-      "Premium medical imaging equipment sales, expert advisory, repair services, and equipment buybacks. CT, MRI, X-Ray, Ultrasound, and Ophthalmology equipment.",
+      "Cuban engineers selling, repairing and buying CT, MRI, X-Ray, ultrasound and ophthalmology equipment. Free estimates and a 5-year warranty. Winter Park, FL.",
     siteName: SITE_NAME,
     type: "website",
     locale: "en_US",
@@ -61,9 +65,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "P&S Medical Device Inc. | Trusted Medical Equipment Partner",
+    title: "Medical Equipment by Cuban Engineers | P&S Medical Device Inc.",
     description:
-      "Premium medical imaging equipment sales, expert advisory, repair services, and equipment buybacks.",
+      "Cuban engineers selling, repairing and buying CT, MRI, X-Ray, ultrasound and ophthalmology equipment. Free estimates and a 5-year warranty. Winter Park, FL.",
     images: [DEFAULT_OG_IMAGE],
   },
   robots: {
@@ -119,7 +123,8 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "MedicalBusiness",
               "name": "P&S Medical Device Inc.",
-              "description": "Premium medical imaging equipment sales, expert advisory, repair services, and equipment buybacks.",
+              "slogan": "Medical equipment by Cuban engineers. Free estimates, 5-year warranty.",
+              "description": "Cuban engineers selling, repairing and buying CT, MRI, X-Ray, ultrasound and ophthalmology equipment. Free estimates and a 5-year warranty. Winter Park, FL.",
               "url": SITE_URL,
               "telephone": "+1-305-244-9340",
               "email": "info@psmedicaldevices.com",
