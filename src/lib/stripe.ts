@@ -167,6 +167,7 @@ export async function createCartCheckoutSession(params: {
   currency?: string;
   successUrl: string;
   cancelUrl: string;
+  discountCode?: string;
 }) {
   const {
     lineItems,
@@ -221,6 +222,7 @@ export async function createCartCheckoutSession(params: {
     itemCount: String(lineItems.reduce((sum, i) => sum + i.quantity, 0)),
     productIds: lineItems.map((i) => i.productId).join(','),
   };
+  if (params.discountCode) metadata.discountCode = params.discountCode;
 
   const sessionParams: Stripe.Checkout.SessionCreateParams = {
     payment_method_types: ['card'],

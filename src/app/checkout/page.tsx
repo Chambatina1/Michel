@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useSyncExternalStore } from 'react';
+import { useState, useMemo, useEffect, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -33,6 +33,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useCartStore } from '@/store/cart-store';
+import { PROMO_CODE_STORAGE_KEY } from '@/components/layout/SubscribePromo';
 import {
   calculateShippingRates,
   formatShippingPrice,
@@ -157,6 +158,25 @@ export default function CheckoutPage() {
   const [selectedShippingId, setSelectedShippingId] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
+  const [discountInput, setDiscountInput] = useState('');
+  const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; percent: number; discount: number } | null>(null);
+  const [discountError, setDiscountError] = useState('');
+  const [discountLoading, setDiscountLoading] = useState(false);
+
+  // Prefill the code a visitor got from the subscribe popup
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(PROMO_CODE_STORAGE_KEY);
+      if (saved) setDiscountInput(saved);
+    } catch {
+      // storage unavailable
+    }
+  }, []);
+
+  // Cart changes invalidate the computed discount
+  useEffect(() => {
+    setAppliedDiscount(null);
+  }, [items]);
 
   // Calculate shipping options
   const shippingOptions = useMemo(() => {
@@ -204,9 +224,38 @@ export default function CheckoutPage() {
   }
 
   const subtotal = getTotal();
+  const discountAmount = appliedDiscount?.discount || 0;
   const shippingCost = selectedShippingOption?.price || 0;
-  const estimatedTax = Math.round(subtotal * 0.06);
-  const total = subtotal + shippingCost + estimatedTax;
+  const estimatedTax = Math.round((subtotal - discountAmount) * 0.06);
+  const total = subtotal - discountAmount + shippingCost + estimatedTax;
+
+  const applyDiscount = async () => {
+    const code = discountInput.trim();
+    if (!code) return;
+    setDiscountLoading(true);
+    setDiscountError('');
+    try {
+      const res = await fetch('/api/promo/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code,
+          cart: items.map((item) => ({ productId: item.productId, quantity: item.quantity })),
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.valid) {
+        setAppliedDiscount({ code: data.code, percent: data.percent, discount: data.discount });
+      } else {
+        setAppliedDiscount(null);
+        setDiscountError(data.error || 'Invalid code');
+      }
+    } catch {
+      setDiscountError('Connection error. Please try again.');
+    } finally {
+      setDiscountLoading(false);
+    }
+  };
 
   const handleAddressChange = (field: keyof ShippingAddress, value: string) => {
     setShippingAddress((prev) => ({ ...prev, [field]: value }));
@@ -262,6 +311,7 @@ export default function CheckoutPage() {
           })),
           shippingAddress,
           shippingMethod: selectedShippingId,
+          discountCode: appliedDiscount?.code,
         }),
       });
 
@@ -269,6 +319,13 @@ export default function CheckoutPage() {
 
       if (res.ok && data.url) {
         clearCart();
+        if (appliedDiscount) {
+          try {
+            localStorage.removeItem(PROMO_CODE_STORAGE_KEY);
+          } catch {
+            // storage unavailable
+          }
+        }
         window.location.href = data.url;
       } else {
         setError(data.error || 'Failed to create checkout session. Please try again.');
@@ -560,6 +617,38 @@ export default function CheckoutPage() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                      {/* Discount Code */}
+                      <div className="space-y-2">
+                        <Label htmlFor="discount-code">Discount code</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="discount-code"
+                            value={discountInput}
+                            onChange={(e) => {
+                              setDiscountInput(e.target.value);
+                              setDiscountError('');
+                            }}
+                            placeholder="PS5-XXXXXX"
+                            className="font-mono uppercase"
+                          />
+                          {appliedDiscount ? (
+                            <Button type="button" variant="outline" onClick={() => setAppliedDiscount(null)}>
+                              Remove
+                            </Button>
+                          ) : (
+                            <Button type="button" variant="outline" onClick={applyDiscount} disabled={discountLoading || !discountInput.trim()}>
+                              {discountLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Apply'}
+                            </Button>
+                          )}
+                        </div>
+                        {discountError && <p className="text-sm text-red-600">{discountError}</p>}
+                        {appliedDiscount && (
+                          <p className="text-sm text-teal-600">
+                            {appliedDiscount.percent}% off parts & accessories applied.
+                          </p>
+                        )}
+                      </div>
+
                       {/* Order Summary in Payment Step */}
                       <div className="rounded-lg bg-muted/50 p-4 space-y-2">
                         <h4 className="text-sm font-semibold text-foreground mb-2">Order Summary</h4>
@@ -576,6 +665,12 @@ export default function CheckoutPage() {
                           <span className="text-muted-foreground">Subtotal</span>
                           <span className="font-medium">{formatPrice(subtotal)}</span>
                         </div>
+                        {appliedDiscount && (
+                          <div className="flex justify-between text-sm text-teal-600">
+                            <span>Discount ({appliedDiscount.code})</span>
+                            <span className="font-medium">-{formatPrice(discountAmount)}</span>
+                          </div>
+                        )}
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Shipping ({selectedShippingOption?.service})</span>
                           <span className="font-medium">{formatShippingPrice(shippingCost)}</span>
@@ -703,6 +798,12 @@ export default function CheckoutPage() {
                       <span className="text-muted-foreground">Subtotal</span>
                       <span className="font-medium">{formatPrice(subtotal)}</span>
                     </div>
+                    {appliedDiscount && (
+                      <div className="flex justify-between text-sm text-teal-600">
+                        <span>Discount ({appliedDiscount.code})</span>
+                        <span className="font-medium">-{formatPrice(discountAmount)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Shipping</span>
                       <span className="font-medium">

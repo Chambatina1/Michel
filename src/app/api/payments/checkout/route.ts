@@ -5,6 +5,7 @@ import {
   STRIPE_PUBLISHABLE_KEY,
 } from '@/lib/stripe';
 import { db } from '@/lib/db';
+import { evaluatePromo } from '@/lib/promo';
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
@@ -61,6 +62,22 @@ export async function POST(request: NextRequest) {
           condition: product.condition,
         };
       });
+
+      // Subscriber discount code: applies to parts & accessories only
+      let appliedDiscountCode: string | undefined;
+      if (body.discountCode) {
+        const promo = await evaluatePromo(body.discountCode, cart);
+        if (!promo.valid) {
+          return NextResponse.json({ error: promo.error }, { status: 400 });
+        }
+        for (const item of lineItems) {
+          if (promo.discountedIds.has(item.productId)) {
+            item.priceInCents = Math.round(item.priceInCents * (1 - promo.percent / 100));
+            item.name = `${item.name} (${promo.percent}% off)`;
+          }
+        }
+        appliedDiscountCode = promo.code;
+      }
 
       // Calculate shipping option details
       const subtotal = products.reduce((sum, p) => {
@@ -120,6 +137,7 @@ export async function POST(request: NextRequest) {
         },
         shippingAddress: addr,
         customerEmail: addr.email || undefined,
+        discountCode: appliedDiscountCode,
         successUrl: `${BASE_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
         cancelUrl: `${BASE_URL}/checkout?cancelled=true`,
       });

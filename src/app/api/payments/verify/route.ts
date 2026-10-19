@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
+import { markPromoCodeUsed } from '@/lib/promo';
 
 /**
  * GET /api/payments/verify?session_id=xxx
@@ -18,6 +19,10 @@ export async function GET(request: NextRequest) {
     }
 
     const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+    if (session.payment_status === 'paid') {
+      await markPromoCodeUsed(session.metadata?.discountCode);
+    }
 
     return NextResponse.json({
       id: session.id,
