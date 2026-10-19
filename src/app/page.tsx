@@ -209,7 +209,7 @@ export default function HomePage() {
             {heroSubtitle}
           </p>
           <ul className="mt-6 flex flex-wrap items-center justify-center gap-2 text-sm font-medium text-white">
-            {['Cuban Engineers', 'Free Estimates', '5-Year Warranty'].map((item) => (
+            {['Cuban Engineers', 'Free Estimates', '5-Year Warranty', 'Export to All the Americas'].map((item) => (
               <li key={item} className="rounded-full border border-white/25 bg-white/10 px-4 py-1.5 backdrop-blur-sm">
                 {item}
               </li>
@@ -235,6 +235,20 @@ export default function HomePage() {
               <Link href="/sell-equipment">{heroBtnSecondary}</Link>
             </Button>
           </div>
+        </div>
+      </section>
+
+      {/* Spanish summary, for Spanish-language searches */}
+      <section lang="es" className="border-b border-border bg-secondary/30 py-10">
+        <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
+          <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+            Equipos médicos de ingenieros cubanos
+          </h2>
+          <p className="mt-3 text-base leading-relaxed text-muted-foreground">
+            Vendemos, reparamos y compramos equipos de tomografía (CT), resonancia magnética (MRI),
+            rayos X, ultrasonido y oftalmología, nuevos y reacondicionados. Estimados gratis,
+            garantía de 5 años y exportación a todos los países de América.
+          </p>
         </div>
       </section>
 
