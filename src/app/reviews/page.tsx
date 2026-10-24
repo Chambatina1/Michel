@@ -485,7 +485,7 @@ export default function ReviewsPage() {
               <Button asChild variant="outline" size="lg">
                 <a href={googleReviewUrl} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="mr-2 h-4 w-4" />
-                  Leave a Review on Google
+                  Review us on Google
                 </a>
               </Button>
             )}

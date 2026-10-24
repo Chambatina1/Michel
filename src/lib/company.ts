@@ -29,7 +29,7 @@ export const COMPANY_DEFAULTS: CompanyInfo = {
   hours: 'Mon-Fri: 9:00 AM - 6:00 PM',
   mapUrl: '',
   whatsapp: '+13052449340',
-  googleReviewUrl: '',
+  googleReviewUrl: 'https://maps.app.goo.gl/7rD3TtudweyfNM4h9',
 };
 
 // Reads the official key first, then the older duplicate key some records still use.
