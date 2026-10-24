@@ -162,7 +162,7 @@ function CheckoutSuccessContent() {
               </li>
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 shrink-0" />
-                Our team will contact you within 24 hours
+                Our team will contact you shortly
               </li>
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 shrink-0" />

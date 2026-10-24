@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { loadCompanyInfo } from '@/lib/company';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -79,17 +80,20 @@ async function sendAutoReply(to: string, userMessage: string) {
 
     const lower = userMessage.toLowerCase();
 
+    const c = await loadCompanyInfo();
+    const contact = `📞 ${c.phone}\n📧 ${c.email}`;
+
     // Smart keyword-based auto-reply
-    let reply = 'Thank you for contacting PS Medical Devices! 🏥\n\nOur team will respond to you shortly. For immediate assistance:\n\n📞 +1 (305) 244-9340\n📧 michelgg0102780@gmail.com\n🌐 ps-medical-devices.onrender.com\n\nHours: Mon-Fri, 8:00 AM - 6:00 PM CST';
+    let reply = `Thank you for contacting ${c.name}! 🏥\n\nOur team will respond to you shortly. For immediate assistance:\n\n${contact}\n🌐 psmedicaldevices.com\n\nHours: ${c.hours.replace(/\n/g, ', ')}`;
 
     if (lower.includes('precio') || lower.includes('price') || lower.includes('cotización') || lower.includes('quote') || lower.includes('cost')) {
-      reply = 'Thank you for your interest! 💰\n\nFor personalized pricing and quotes, please provide:\n- Equipment type you need\n- Brand preference\n- New or refurbished\n- Your facility location\n\nOur team will prepare a custom quote. You can also call us directly:\n📞 +1 (305) 244-9340';
+      reply = `Thank you for your interest! 💰\n\nFor personalized pricing and quotes, please provide:\n- Equipment type you need\n- Brand preference\n- New or refurbished\n- Your facility location\n\nOur team will prepare a custom quote. You can also call us directly:\n📞 ${c.phone}`;
     } else if (lower.includes('vender') || lower.includes('sell') || lower.includes('compra') || lower.includes('buyback')) {
-      reply = 'We buy used medical equipment! ♻️\n\nTo get an offer, please share:\n- Equipment type and model\n- Year of manufacture\n- Current condition\n- Your location\n\nWe handle pickup logistics and offer fair prices.\n📞 +1 (305) 244-9340 for immediate assistance.';
+      reply = `We buy used medical equipment! ♻️\n\nTo get an offer, please share:\n- Equipment type and model\n- Year of manufacture\n- Current condition\n- Your location\n\n📞 ${c.phone} for immediate assistance.`;
     } else if (lower.includes('repar') || lower.includes('service') || lower.includes('mantenimiento') || lower.includes('repair')) {
-      reply = 'PS Medical Devices offers expert repair services! 🔧\n\nOur certified technicians provide:\n- Preventive maintenance\n- Emergency repairs\n- Equipment calibration\n- Software updates\n\n📞 Call +1 (305) 244-9340 for service requests';
+      reply = `Thank you for your service request! 🔧\n\nPlease share the brand, model and the issue, and our team will confirm scope and availability.\n\n📞 ${c.phone}`;
     } else if (lower.includes('ct') || lower.includes('mri') || lower.includes('rayos') || lower.includes('x-ray') || lower.includes('ultraso') || lower.includes('ecogra') || lower.includes('oftalm')) {
-      reply = 'Great choice! We have extensive inventory in that category. 🏥\n\nFor current availability and pricing:\n📞 +1 (305) 244-9340\n📧 michelgg0102780@gmail.com\n\nOr visit our website:\n🌐 ps-medical-devices.onrender.com';
+      reply = `Thanks for your interest! 🏥\n\nYou can browse current inventory at psmedicaldevices.com/catalog, or contact us for availability and pricing:\n${contact}`;
     }
 
     const response = await fetch(

@@ -128,7 +128,7 @@ export function LeadForm({ type, productId, className }: LeadFormProps) {
         </h3>
         <p className="max-w-sm text-sm text-muted-foreground">
           Your {type} request has been submitted successfully. Our team will
-          get back to you within 24 hours.
+          get back to you shortly.
         </p>
         <Button
           variant="outline"

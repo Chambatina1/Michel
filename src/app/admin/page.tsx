@@ -111,6 +111,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
+import { LEGAL_PAGES } from '@/lib/legal-drafts';
+import { LegalPageEditor } from '@/components/admin/LegalPageEditor';
 
 /* ─── Types ─── */
 interface Product {
@@ -2799,7 +2801,7 @@ export default function AdminPage() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
                             <Label className="text-xs">Badge Text</Label>
-                            <Input value={settings.hero_badge || ''} onChange={(e) => setSettings(prev => ({ ...prev, hero_badge: e.target.value }))} placeholder="Trusted by 500+ Healthcare Facilities" />
+                            <Input value={settings.hero_badge || ''} onChange={(e) => setSettings(prev => ({ ...prev, hero_badge: e.target.value }))} placeholder="Vacio = no se muestra" />
                           </div>
                           <div>
                             <Label className="text-xs">Badge Icon (lucide icon name)</Label>
@@ -2837,14 +2839,14 @@ export default function AdminPage() {
                         <CardTitle className="text-base flex items-center gap-2">
                           <TrendingUp className="h-4 w-4" /> Stats Section
                         </CardTitle>
-                        <p className="text-xs text-muted-foreground">Numbers shown below the categories section</p>
+                        <p className="text-xs text-muted-foreground">Numbers shown below the categories section. Publique solo cifras verificables; deje el valor vacio para ocultar una cifra.</p>
                       </CardHeader>
                       <CardContent className="space-y-3">
                         {[
-                          { key: 'stat1_value', labelKey: 'stat1_label', placeholder_val: '500+', placeholder_label: 'Healthcare Clients' },
-                          { key: 'stat2_value', labelKey: 'stat2_label', placeholder_val: '2,000+', placeholder_label: 'Devices Sold' },
-                          { key: 'stat3_value', labelKey: 'stat3_label', placeholder_val: '15+', placeholder_label: 'Years Experience' },
-                          { key: 'stat4_value', labelKey: 'stat4_label', placeholder_val: '98%', placeholder_label: 'Client Satisfaction' },
+                          { key: 'stat1_value', labelKey: 'stat1_label', placeholder_val: 'Vacio = oculto', placeholder_label: 'Etiqueta' },
+                          { key: 'stat2_value', labelKey: 'stat2_label', placeholder_val: 'Vacio = oculto', placeholder_label: 'Etiqueta' },
+                          { key: 'stat3_value', labelKey: 'stat3_label', placeholder_val: 'Vacio = oculto', placeholder_label: 'Etiqueta' },
+                          { key: 'stat4_value', labelKey: 'stat4_label', placeholder_val: 'Vacio = oculto', placeholder_label: 'Etiqueta' },
                         ].map((stat, idx) => (
                           <div key={idx} className="grid grid-cols-2 gap-3 items-end">
                             <div>
@@ -2874,7 +2876,7 @@ export default function AdminPage() {
                         </div>
                         <div>
                           <Label className="text-xs">Section Description</Label>
-                          <Textarea value={settings.why_description || ''} onChange={(e) => setSettings(prev => ({ ...prev, why_description: e.target.value }))} rows={3} />
+                          <Textarea value={settings.why_subtitle || ''} onChange={(e) => setSettings(prev => ({ ...prev, why_subtitle: e.target.value }))} rows={3} />
                         </div>
                         {[1, 2, 3, 4].map((idx) => (
                           <div key={idx} className="grid grid-cols-2 gap-3">
@@ -2940,6 +2942,11 @@ export default function AdminPage() {
                           <Label className="text-xs">CTA Button Text</Label>
                           <Input value={settings.services_cta_btn || ''} onChange={(e) => setSettings(prev => ({ ...prev, services_cta_btn: e.target.value }))} placeholder="Get Started" />
                         </div>
+                        <div>
+                          <Label className="text-xs">Area de servicio</Label>
+                          <Textarea value={settings.services_area_text || ''} onChange={(e) => setSettings(prev => ({ ...prev, services_area_text: e.target.value }))} rows={3} placeholder="Ej.: Florida y estados cercanos. Consultenos para otras ubicaciones." />
+                          <p className="mt-1 text-[11px] text-muted-foreground">Vacio = la seccion de area de servicio no aparece.</p>
+                        </div>
                       </CardContent>
                     </Card>
 
@@ -2971,24 +2978,65 @@ export default function AdminPage() {
                     {/* ── ABOUT PAGE - FULL CONTENT ── */}
                     <Card>
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-base flex items-center gap-2"><Globe className="h-4 w-4" /> About Page - Full Content</CardTitle>
+                        <CardTitle className="text-base flex items-center gap-2"><Globe className="h-4 w-4" /> About Us</CardTitle>
+                        <p className="text-xs text-muted-foreground">Todo lo que aparece en /about. Un campo vacio oculta su seccion: no se muestran cifras ni certificaciones si no las escribe aqui. El ano de fundacion se edita en Informacion de la Empresa.</p>
                       </CardHeader>
                       <CardContent className="space-y-3">
                         <div>
-                          <Label className="text-xs">Mission Statement</Label>
-                          <Textarea value={settings.about_mission || ''} onChange={(e) => setSettings(prev => ({ ...prev, about_mission: e.target.value }))} rows={3} placeholder="Our mission is to provide..." />
+                          <Label className="text-xs">Titulo principal</Label>
+                          <Input value={settings.about_hero_title || ''} onChange={(e) => setSettings(prev => ({ ...prev, about_hero_title: e.target.value }))} placeholder={"About P&S Medical Device Inc."} />
                         </div>
                         <div>
-                          <Label className="text-xs">Company Story</Label>
-                          <Textarea value={settings.about_story || ''} onChange={(e) => setSettings(prev => ({ ...prev, about_story: e.target.value }))} rows={4} placeholder="Founded in..." />
+                          <Label className="text-xs">Subtitulo</Label>
+                          <Input value={settings.about_hero_subtitle || ''} onChange={(e) => setSettings(prev => ({ ...prev, about_hero_subtitle: e.target.value }))} placeholder={"Buying, selling, refurbishing and servicing medical equipment since 2018."} />
                         </div>
                         <div>
-                          <Label className="text-xs">Values (one per line)</Label>
-                          <Textarea value={settings.about_values || ''} onChange={(e) => setSettings(prev => ({ ...prev, about_values: e.target.value }))} rows={3} placeholder={"Quality\nIntegrity\nInnovation"} />
+                          <Label className="text-xs">Historia de la empresa</Label>
+                          <Textarea value={settings.about_story || ''} onChange={(e) => setSettings(prev => ({ ...prev, about_story: e.target.value }))} rows={8} placeholder={"Founded in 2018..."} />
+                          <p className="mt-1 text-[11px] text-muted-foreground">Separe parrafos con una linea en blanco. Acepta **negritas**, listas con - y enlaces.</p>
                         </div>
                         <div>
-                          <Label className="text-xs">Team Section Title</Label>
-                          <Input value={settings.about_team_title || ''} onChange={(e) => setSettings(prev => ({ ...prev, about_team_title: e.target.value }))} placeholder="Meet Our Team" />
+                          <Label className="text-xs">Imagen (URL)</Label>
+                          <Input value={settings.about_image || ''} onChange={(e) => setSettings(prev => ({ ...prev, about_image: e.target.value }))} placeholder={"https://..."} />
+                          <p className="mt-1 text-[11px] text-muted-foreground">Imagen junto a la historia.</p>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Mision</Label>
+                          <Textarea value={settings.about_mission || ''} onChange={(e) => setSettings(prev => ({ ...prev, about_mission: e.target.value }))} rows={3} placeholder={"Our mission is..."} />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Valores (uno por linea: Titulo | Descripcion)</Label>
+                          <Textarea value={settings.about_values || ''} onChange={(e) => setSettings(prev => ({ ...prev, about_values: e.target.value }))} rows={4} placeholder={"Integrity | Honest assessments and clear quotes\nService | We answer every request"} />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Cifras (una por linea: Valor | Etiqueta | Detalle)</Label>
+                          <Textarea value={settings.about_stats || ''} onChange={(e) => setSettings(prev => ({ ...prev, about_stats: e.target.value }))} rows={4} placeholder={"2018 | Established | Hollywood, FL"} />
+                          <p className="mt-1 text-[11px] text-muted-foreground">Publique solo cifras verificables. Vacio = la seccion no aparece.</p>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Titulo del equipo</Label>
+                          <Input value={settings.about_team_title || ''} onChange={(e) => setSettings(prev => ({ ...prev, about_team_title: e.target.value }))} placeholder={"Our Team"} />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Texto del equipo</Label>
+                          <Textarea value={settings.about_team_text || ''} onChange={(e) => setSettings(prev => ({ ...prev, about_team_text: e.target.value }))} rows={3} placeholder={"Our team..."} />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Miembros del equipo (uno por linea: Nombre | Cargo | URL de foto)</Label>
+                          <Textarea value={settings.about_team_members || ''} onChange={(e) => setSettings(prev => ({ ...prev, about_team_members: e.target.value }))} rows={4} placeholder={"Jane Doe | General Manager | https://..."} />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Certificaciones (una por linea: Nombre | Detalle)</Label>
+                          <Textarea value={settings.about_certifications || ''} onChange={(e) => setSettings(prev => ({ ...prev, about_certifications: e.target.value }))} rows={3} placeholder={"Nombre de la certificacion | Emitida por ..."} />
+                          <p className="mt-1 text-[11px] text-muted-foreground">Solo acreditaciones reales y vigentes. Vacio = la seccion no aparece.</p>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Titulo del llamado final</Label>
+                          <Input value={settings.about_cta_title || ''} onChange={(e) => setSettings(prev => ({ ...prev, about_cta_title: e.target.value }))} placeholder={"Ready to Work With Us?"} />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Texto del llamado final</Label>
+                          <Textarea value={settings.about_cta_desc || ''} onChange={(e) => setSettings(prev => ({ ...prev, about_cta_desc: e.target.value }))} rows={2} placeholder={"Tell us what equipment you need..."} />
                         </div>
                       </CardContent>
                     </Card>
@@ -3007,79 +3055,20 @@ export default function AdminPage() {
                           <Label className="text-xs">Page Subtitle</Label>
                           <Input value={settings.contact_page_subtitle || ''} onChange={(e) => setSettings(prev => ({ ...prev, contact_page_subtitle: e.target.value }))} placeholder="We'd love to hear from you" />
                         </div>
-                        <div>
-                          <Label className="text-xs">Office Address</Label>
-                          <Input value={settings.contact_address || ''} onChange={(e) => setSettings(prev => ({ ...prev, contact_address: e.target.value }))} placeholder="123 Medical Dr, Houston, TX" />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Phone Number</Label>
-                          <Input value={settings.contact_phone || ''} onChange={(e) => setSettings(prev => ({ ...prev, contact_phone: e.target.value }))} placeholder="+1 (305) 244-9340" />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Email</Label>
-                          <Input value={settings.contact_email || ''} onChange={(e) => setSettings(prev => ({ ...prev, contact_email: e.target.value }))} placeholder="info@psmedicaldevices.com" />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Business Hours</Label>
-                          <Textarea value={settings.contact_hours || ''} onChange={(e) => setSettings(prev => ({ ...prev, contact_hours: e.target.value }))} rows={2} placeholder={"Monday - Friday: 8:00 AM - 6:00 PM EST\nSaturday: 9:00 AM - 1:00 PM EST"} />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Google Maps Embed URL</Label>
-                          <Input value={settings.contact_map_url || ''} onChange={(e) => setSettings(prev => ({ ...prev, contact_map_url: e.target.value }))} placeholder="https://www.google.com/maps/embed?..." />
+                        <div className="flex flex-col gap-2 rounded-lg border bg-secondary/30 p-3 sm:flex-row sm:items-center sm:justify-between">
+                          <p className="text-xs text-muted-foreground">La direccion, telefono, email, horario y mapa se editan una sola vez en Configuracion &gt; Informacion de la Empresa y se actualizan en todo el sitio.</p>
+                          <Button variant="outline" size="sm" onClick={() => { setActiveTab('settings'); setSettingsSection('general'); }}><Building2 className="mr-2 h-4 w-4" />Abrir</Button>
                         </div>
                       </CardContent>
                     </Card>
 
-                    {/* ── RETURNS POLICY PAGE ── */}
+                    {/* ── LEGAL PAGES (edited in Configuracion) ── */}
                     <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base flex items-center gap-2"><Shield className="h-4 w-4" /> Returns Policy Page</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        <div>
-                          <Label className="text-xs">Page Title</Label>
-                          <Input value={settings.returns_title || ''} onChange={(e) => setSettings(prev => ({ ...prev, returns_title: e.target.value }))} placeholder="Returns & Refund Policy" />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Policy Content</Label>
-                          <Textarea value={settings.returns_content || ''} onChange={(e) => setSettings(prev => ({ ...prev, returns_content: e.target.value }))} rows={6} placeholder="Describe your returns policy..." />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Return Window (e.g., &quot;30 days&quot;)</Label>
-                          <Input value={settings.returns_window || ''} onChange={(e) => setSettings(prev => ({ ...prev, returns_window: e.target.value }))} placeholder="30 days" />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Contact for Returns</Label>
-                          <Input value={settings.returns_contact || ''} onChange={(e) => setSettings(prev => ({ ...prev, returns_contact: e.target.value }))} placeholder="returns@psmedicaldevices.com" />
-                        </div>
+                      <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-sm text-muted-foreground">Terms of Service, Privacy Policy y Return &amp; Warranty Policy se editan en Configuracion &gt; Paginas Legales.</p>
+                        <Button variant="outline" size="sm" onClick={() => { setActiveTab('settings'); setSettingsSection('legal'); }}><Shield className="mr-2 h-4 w-4" />Abrir Paginas Legales</Button>
                       </CardContent>
                     </Card>
-
-                    {/* ── INDIVIDUAL PAGE EDITORS ── */}
-                    {[
-                      { key: 'home', label: 'Home Page', desc: 'Main landing page content and hero text' },
-                      { key: 'sell-equipment', label: 'Sell Your Equipment', desc: 'Equipment selling program details' },
-                      { key: 'about', label: 'About Us', desc: 'Company information and team details' },
-                      { key: 'reviews', label: 'Reviews', desc: 'Customer testimonials and review settings' },
-                      { key: 'contact', label: 'Contact', desc: 'Contact information and form settings' },
-                    ].map((page) => (
-                      <Card key={page.key}>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm font-semibold">{page.label}</CardTitle>
-                          <p className="text-xs text-muted-foreground">{page.desc}</p>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                          <div>
-                            <Label className="text-xs">Page Title</Label>
-                            <Input value={settings[`${page.key}_title`] || ''} onChange={(e) => setSettings(prev => ({ ...prev, [`${page.key}_title`]: e.target.value }))} placeholder={`Title for ${page.label}`} />
-                          </div>
-                          <div>
-                            <Label className="text-xs">Page Content (Markdown)</Label>
-                            <Textarea value={settings[`${page.key}_content`] || ''} onChange={(e) => setSettings(prev => ({ ...prev, [`${page.key}_content`]: e.target.value }))} placeholder={`Content for ${page.label}...`} rows={4} />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
 
                     {/* ── TRUST BAR ── */}
                     <Card>
@@ -3090,8 +3079,8 @@ export default function AdminPage() {
                       </CardHeader>
                       <CardContent className="space-y-3">
                         <div>
-                          <Label className="text-xs">Trust Bar Items (one per line, format: IconName|Text)</Label>
-                          <Textarea value={settings.trust_bar_items || ''} onChange={(e) => setSettings(prev => ({ ...prev, trust_bar_items: e.target.value }))} rows={4} placeholder={"ShieldCheck|FDA Certified Equipment\nTruck|Free Shipping Available\nClock|24/7 Technical Support"} />
+                          <Label className="text-xs">Trust Bar Items (one per line, format: IconName|Title|Description)</Label>
+                          <Textarea value={settings.trust_bar_items || ''} onChange={(e) => setSettings(prev => ({ ...prev, trust_bar_items: e.target.value }))} rows={4} placeholder={"ShieldCheck|Expert Advisory|Personalized equipment guidance\nWrench|Service|Ask us about scope and availability"} />
                         </div>
                       </CardContent>
                     </Card>
@@ -3110,7 +3099,8 @@ export default function AdminPage() {
                   <div><h3 className="text-lg font-semibold text-gray-900">Configuracion del Sitio</h3><p className="text-sm text-gray-500">Administra toda la configuracion de tu sitio web</p></div>
                   <div className="flex flex-wrap gap-2 mb-2">
                     {[
-                      { id: 'general', label: 'Informacion General', icon: Building2 },
+                      { id: 'general', label: 'Informacion de la Empresa', icon: Building2 },
+                      { id: 'legal', label: 'Paginas Legales', icon: Shield },
                       { id: 'appearance', label: 'Apariencia', icon: Palette },
                       { id: 'hero', label: 'Seccion Hero', icon: Globe },
                       { id: 'social', label: 'Redes Sociales', icon: Share2 },
@@ -3123,7 +3113,41 @@ export default function AdminPage() {
                     ))}
                   </div>
                   {settingsSection === 'general' && (
-                    <Card className="border-0 shadow-sm"><CardHeader><CardTitle className="text-base flex items-center gap-2"><Building2 className="h-4 w-4" />Informacion General</CardTitle></CardHeader><CardContent className="space-y-4"><div className="grid grid-cols-1 gap-4 sm:grid-cols-2"><div className="space-y-2"><Label>Nombre de la Empresa</Label><Input value={settings.company_name || ''} onChange={e => setSettings({...settings, company_name: e.target.value})} placeholder="PS Medical Devices" /></div><div className="space-y-2"><Label>Eslogan</Label><Input value={settings.tagline || ''} onChange={e => setSettings({...settings, tagline: e.target.value})} placeholder="Tu socio de confianza..." /></div><div className="space-y-2"><Label>Telefono</Label><Input value={settings.phone || ''} onChange={e => setSettings({...settings, phone: e.target.value})} placeholder="+1 (305) 244-9340" /></div><div className="space-y-2"><Label>Email</Label><Input value={settings.email || ''} onChange={e => setSettings({...settings, email: e.target.value})} placeholder="info@psmedicaldevices.com" /></div></div><div className="space-y-2"><Label>Direccion</Label><Input value={settings.address || ''} onChange={e => setSettings({...settings, address: e.target.value})} placeholder="123 Medical Dr, Houston, TX 77001" /></div><div className="space-y-2"><Label>Horario de Atencion</Label><Input value={settings.hours || ''} onChange={e => setSettings({...settings, hours: e.target.value})} placeholder="Lunes a Viernes, 8:00 AM - 6:00 PM" /></div></CardContent></Card>
+                    <Card className="border-0 shadow-sm">
+                      <CardHeader>
+                        <CardTitle className="text-base flex items-center gap-2"><Building2 className="h-4 w-4" />Informacion de la Empresa</CardTitle>
+                        <p className="text-sm text-gray-500">Datos oficiales de la compania. Se muestran en el pie de pagina, Contact, About, las paginas legales, el chat y WhatsApp, y en los datos para Google. Cambielos aqui una sola vez.</p>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                          <div className="space-y-2"><Label>Nombre de la Empresa</Label><Input value={settings.company_name || ''} onChange={e => setSettings({...settings, company_name: e.target.value})} placeholder="P&S Medical Device Inc." /></div>
+                          <div className="space-y-2"><Label>Ano de fundacion</Label><Input value={settings.company_founded_year || ''} onChange={e => setSettings({...settings, company_founded_year: e.target.value})} placeholder="2018" /></div>
+                          <div className="space-y-2"><Label>Eslogan</Label><Input value={settings.tagline || ''} onChange={e => setSettings({...settings, tagline: e.target.value})} placeholder="Medical Imaging & Ophthalmology Equipment" /></div>
+                          <div className="space-y-2"><Label>Telefono</Label><Input value={settings.contact_phone || ''} onChange={e => setSettings({...settings, contact_phone: e.target.value})} placeholder="+1 (305) 244-9340" /></div>
+                          <div className="space-y-2"><Label>Email publico</Label><Input value={settings.contact_email || ''} onChange={e => setSettings({...settings, contact_email: e.target.value})} placeholder="admin@psmedicaldevices.com" /></div>
+                          <div className="space-y-2"><Label>WhatsApp (solo numeros con codigo de pais)</Label><Input value={settings.whatsapp_phone || ''} onChange={e => setSettings({...settings, whatsapp_phone: e.target.value})} placeholder="13052449340" /></div>
+                        </div>
+                        <div className="space-y-2"><Label>Direccion</Label><Input value={settings.contact_address || ''} onChange={e => setSettings({...settings, contact_address: e.target.value})} placeholder="540 N 70th Ave, Hollywood, FL 33024" /></div>
+                        <div className="space-y-2"><Label>Horario de Atencion (una linea por horario)</Label><Textarea rows={3} value={settings.contact_hours || ''} onChange={e => setSettings({...settings, contact_hours: e.target.value})} placeholder={"Mon-Fri: 8:00 AM - 6:00 PM\nSat: 9:00 AM - 1:00 PM"} /></div>
+                        <div className="space-y-2"><Label>Descripcion corta de la empresa</Label><Textarea rows={3} value={settings.company_description || ''} onChange={e => setSettings({...settings, company_description: e.target.value})} placeholder="Se muestra en el pie de pagina" /></div>
+                        <div className="space-y-2"><Label>Mapa de Google (URL para insertar)</Label><Input value={settings.contact_map_url || ''} onChange={e => setSettings({...settings, contact_map_url: e.target.value})} placeholder="https://www.google.com/maps/embed?..." /></div>
+                        <div className="space-y-2"><Label>Enlace para dejar resena en Google</Label><Input value={settings.google_review_url || ''} onChange={e => setSettings({...settings, google_review_url: e.target.value})} placeholder="https://g.page/r/.../review" /></div>
+                        <p className="text-xs text-gray-500">El enlace de resena se obtiene en su Perfil de Empresa de Google, en &quot;Pedir resenas&quot;. Si esta vacio, el boton de Google no aparece en Reviews.</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                  {settingsSection === 'legal' && (
+                    <div className="space-y-4">
+                      <p className="text-sm text-gray-500">Mientras una pagina no tenga texto guardado, el sitio muestra un aviso con sus datos de contacto. &quot;Cargar borrador&quot; llena el editor con un texto base con [corchetes] para completar; no se publica hasta que pulse Guardar. Recomendamos que un abogado revise los textos antes de publicarlos.</p>
+                      {LEGAL_PAGES.map((page) => (
+                        <LegalPageEditor
+                          key={page.key}
+                          page={page}
+                          settings={settings}
+                          onChange={(key, value) => setSettings(prev => ({ ...prev, [key]: value }))}
+                        />
+                      ))}
+                    </div>
                   )}
                   {settingsSection === 'appearance' && (
                     <Card className="border-0 shadow-sm"><CardHeader><CardTitle className="text-base flex items-center gap-2"><Palette className="h-4 w-4" />Apariencia</CardTitle></CardHeader><CardContent className="space-y-4"><div className="grid grid-cols-1 gap-4 sm:grid-cols-2"><div className="space-y-2"><Label>Color Primario</Label><div className="flex items-center gap-3"><input type="color" value={settings.primary_color || '#1a2a5e'} onChange={e => setSettings({...settings, primary_color: e.target.value})} className="h-10 w-10 cursor-pointer rounded-lg border p-0.5" /><Input value={settings.primary_color || '#1a2a5e'} onChange={e => setSettings({...settings, primary_color: e.target.value})} className="flex-1 font-mono text-sm" /></div></div><div className="space-y-2"><Label>Color de Acento</Label><div className="flex items-center gap-3"><input type="color" value={settings.accent_color || '#0d9488'} onChange={e => setSettings({...settings, accent_color: e.target.value})} className="h-10 w-10 cursor-pointer rounded-lg border p-0.5" /><Input value={settings.accent_color || '#0d9488'} onChange={e => setSettings({...settings, accent_color: e.target.value})} className="flex-1 font-mono text-sm" /></div></div></div></CardContent></Card>

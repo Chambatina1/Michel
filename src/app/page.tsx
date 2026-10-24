@@ -118,32 +118,32 @@ export default function HomePage() {
   }, []);
 
   // Hero
-  const heroBadge = getSetting(settings, 'hero_badge', 'Trusted by 500+ Healthcare Facilities');
+  const heroBadge = getSetting(settings, 'hero_badge');
   const heroHeadline = getSetting(settings, 'hero_headline', 'Medical Imaging & Ophthalmology|Equipment You Can Trust');
-  const heroSubtitle = getSetting(settings, 'hero_subtitle', 'From CT scanners to ophthalmology devices, we supply, service, and buy medical equipment with unmatched expertise and fair pricing.');
+  const heroSubtitle = getSetting(settings, 'hero_subtitle', 'New, used and refurbished diagnostic imaging and ophthalmology equipment. We buy, sell, refurbish and service medical devices.');
   const heroBtnPrimary = getSetting(settings, 'hero_btn_primary', 'Browse Equipment');
   const heroBtnSecondary = getSetting(settings, 'hero_btn_secondary', 'Sell Your Equipment');
 
   const headlineParts = heroHeadline.split('|');
   const headlineMain = headlineParts[0] || heroHeadline;
-  const headlineAccent = headlineParts[1] || '';
+  const headlineAccent = getSetting(settings, 'hero_accent', headlineParts[1] || '');
 
   // Stats
   const stats = [
-    { value: getSetting(settings, 'stat1_value', '500+'), label: getSetting(settings, 'stat1_label', 'Healthcare Clients') },
-    { value: getSetting(settings, 'stat2_value', '2,000+'), label: getSetting(settings, 'stat2_label', 'Devices Sold') },
-    { value: getSetting(settings, 'stat3_value', '15+'), label: getSetting(settings, 'stat3_label', 'Years Experience') },
-    { value: getSetting(settings, 'stat4_value', '98%'), label: getSetting(settings, 'stat4_label', 'Client Satisfaction') },
-  ];
+    { value: getSetting(settings, 'stat1_value'), label: getSetting(settings, 'stat1_label') },
+    { value: getSetting(settings, 'stat2_value'), label: getSetting(settings, 'stat2_label') },
+    { value: getSetting(settings, 'stat3_value'), label: getSetting(settings, 'stat3_label') },
+    { value: getSetting(settings, 'stat4_value'), label: getSetting(settings, 'stat4_label') },
+  ].filter((stat) => stat.value && stat.label); // empty in the admin = hidden
 
   // Why Choose Us
   const whyTitle = getSetting(settings, 'why_title', 'Why Healthcare Facilities Choose P&S Medical Device Inc.');
-  const whySubtitle = getSetting(settings, 'why_subtitle', 'With over 15 years in the medical equipment industry, we combine technical expertise with a commitment to patient care outcomes.');
+  const whySubtitle = getSetting(settings, 'why_subtitle', 'We focus on diagnostic imaging and ophthalmology equipment, and we help each facility find the right unit for its needs and budget.');
   const whyFeatures = [
-    { icon: ShieldCheck, title: getSetting(settings, 'why_f1_title', 'Quality Guaranteed'), desc: getSetting(settings, 'why_f1_desc', 'Every device undergoes rigorous testing and certification before delivery.') },
-    { icon: TrendingUp, title: getSetting(settings, 'why_f2_title', 'Competitive Pricing'), desc: getSetting(settings, 'why_f2_desc', 'Save 30-60% compared to new equipment without sacrificing performance.') },
-    { icon: Wrench, title: getSetting(settings, 'why_f3_title', 'Full Service & Support'), desc: getSetting(settings, 'why_f3_desc', 'Installation, training, maintenance, and 24/7 emergency repair services.') },
-    { icon: Search, title: getSetting(settings, 'why_f4_title', 'Expert Consultation'), desc: getSetting(settings, 'why_f4_desc', 'Our specialists help you choose the right equipment for your specific needs.') },
+    { icon: ShieldCheck, title: getSetting(settings, 'why_f1_title', 'Imaging & Ophthalmology Focus'), desc: getSetting(settings, 'why_f1_desc', 'We specialize in diagnostic imaging and ophthalmology equipment.') },
+    { icon: TrendingUp, title: getSetting(settings, 'why_f2_title', 'New, Used & Refurbished'), desc: getSetting(settings, 'why_f2_desc', 'Options for different budgets, with condition and included items stated in every quote.') },
+    { icon: Wrench, title: getSetting(settings, 'why_f3_title', 'Service'), desc: getSetting(settings, 'why_f3_desc', 'Services related to the equipment we sell. Contact us to confirm scope and availability.') },
+    { icon: Search, title: getSetting(settings, 'why_f4_title', 'We Buy Equipment'), desc: getSetting(settings, 'why_f4_desc', 'Sell us your used or decommissioned devices.') },
   ];
 
   // CTA 1
@@ -153,7 +153,7 @@ export default function HomePage() {
 
   // CTA 2
   const cta2Title = getSetting(settings, 'cta2_title', 'Have Old Equipment to Sell?');
-  const cta2Desc = getSetting(settings, 'cta2_desc', 'We buy used, broken, or decommissioned medical devices at fair market prices. Get a same-day offer.');
+  const cta2Desc = getSetting(settings, 'cta2_desc', 'We buy used, broken, or decommissioned medical devices. Tell us about your equipment and we will get back to you with an offer.');
   const cta2Btn = getSetting(settings, 'cta2_btn', 'Get Your Offer Now');
 
   // Separate equipment categories from "Parts & Accessories"
@@ -192,10 +192,12 @@ export default function HomePage() {
         </video>
         <div className="absolute inset-0 bg-gradient-to-r from-primary/85 via-primary/60 to-primary/40" />
         <div className="relative mx-auto flex min-h-[520px] max-w-7xl flex-col items-center justify-center px-4 py-20 text-center sm:px-6 sm:py-28 lg:px-8">
-          <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
-            <HeartPulse className="h-3.5 w-3.5" />
-            {heroBadge}
-          </span>
+          {heroBadge && (
+            <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
+              <HeartPulse className="h-3.5 w-3.5" />
+              {heroBadge}
+            </span>
+          )}
           <h1 className="max-w-3xl text-3xl font-bold tracking-tight text-white sm:text-4xl md:text-5xl lg:text-6xl">
             {headlineMain}
             {headlineAccent && (
@@ -357,6 +359,7 @@ export default function HomePage() {
       </section>
 
       {/* Stats Section */}
+      {stats.length > 0 && (
       <section className="border-y border-border bg-secondary/30 py-14">
         <div className="mx-auto grid max-w-7xl grid-cols-2 gap-8 px-4 sm:px-6 md:grid-cols-4 lg:px-8">
           {stats.map((stat) => (
@@ -371,6 +374,7 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+      )}
 
       {/* Why Choose Us */}
       <section className="py-16 sm:py-20 lg:py-24">
@@ -384,7 +388,7 @@ export default function HomePage() {
                 {whySubtitle}
               </p>
               <ul className="mt-8 space-y-4">
-                {whyFeatures.map((item) => (
+                {whyFeatures.filter((item) => item.title).map((item) => (
                   <li key={item.title} className="flex items-start gap-3">
                     <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-accent/10 text-accent">
                       <item.icon className="h-4 w-4" />

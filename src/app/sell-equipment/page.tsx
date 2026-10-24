@@ -76,23 +76,23 @@ const faqItems = [
   },
   {
     question: 'How do you determine the offer price?',
-    answer: 'Our offers are based on fair market value, considering factors such as the equipment\'s age, brand, model, condition, maintenance history, and current market demand. We provide transparent pricing with no hidden fees.',
+    answer: 'Our offers are based on fair market value, considering factors such as the equipment\'s age, brand, model, condition, maintenance history, and current market demand. Every offer is made in writing.',
   },
   {
     question: 'Do you handle equipment removal and logistics?',
-    answer: 'Yes! We handle all logistics including deinstallation, packing, and transportation. Our certified technicians ensure safe removal from your facility at no cost to you. We coordinate scheduling to minimize disruption to your operations.',
+    answer: 'We can coordinate deinstallation, packing and transportation. Who handles each step, and any cost, is agreed in writing for each purchase.',
   },
   {
     question: 'How long does the selling process take?',
-    answer: 'Once we receive your submission, we typically respond with an initial offer within 24-48 hours. After agreement, scheduling and removal usually take 1-2 weeks depending on equipment type and location. Payment is processed promptly upon pickup.',
+    answer: 'Once we receive your submission, our team reviews it and contacts you. Timing for the offer, removal and payment depends on the equipment and its location, and is agreed with you before pickup.',
   },
   {
     question: 'What if my equipment is broken or non-functional?',
-    answer: 'We buy equipment in all conditions. Even non-functional equipment has value through salvageable parts, components, and scrap materials. We\'ll evaluate your equipment and make a fair offer regardless of its working condition.',
+    answer: 'We buy equipment in all conditions. Even non-functional equipment has value through salvageable parts, components, and scrap materials. We\'ll evaluate your equipment and let you know whether we can make an offer.',
   },
   {
     question: 'Do you provide documentation for the sale?',
-    answer: 'Absolutely. We provide a bill of sale, certificate of deinstallation, and any necessary transfer documentation. All transactions are handled professionally and can be coordinated with your compliance and accounting departments.',
+    answer: 'Yes. We provide a bill of sale, and we can coordinate other transfer documents your compliance or accounting team needs.',
   },
 ];
 
@@ -201,7 +201,7 @@ export default function SellEquipmentPage() {
               Your equipment submission has been received successfully.
             </p>
             <p className="text-sm text-muted-foreground mb-8">
-              Our team will review your submission and get back to you with an offer within 24-48 hours.
+              Our team will review your submission and get back to you with an offer.
               We&apos;ll contact you at the email address you provided.
             </p>
             <div className="flex justify-center gap-3">
@@ -259,17 +259,17 @@ export default function SellEquipmentPage() {
               {
                 icon: DollarSign,
                 title: 'Fair Market Value',
-                description: 'We offer competitive prices based on equipment condition, brand, and current market demand. No lowball offers — just fair, transparent pricing.',
+                description: 'Offers are based on equipment condition, brand, model and current market demand.',
               },
               {
                 icon: Clock,
-                title: 'Quick Process',
-                description: 'Get an initial offer within 24-48 hours. Fast evaluation, quick scheduling, and prompt payment upon equipment pickup.',
+                title: 'Simple Process',
+                description: 'Send us the details and photos, our team reviews them and contacts you with next steps.',
               },
               {
                 icon: Truck,
                 title: 'We Handle Logistics',
-                description: 'Our certified technicians handle deinstallation, packing, and transportation. Zero hassle for your facility.',
+                description: 'We can coordinate deinstallation, packing and transportation for your equipment.',
               },
             ].map((benefit, idx) => (
               <motion.div
@@ -312,7 +312,7 @@ export default function SellEquipmentPage() {
                 <CardContent className="p-6 sm:p-8">
                   <h2 className="text-xl font-bold text-foreground mb-1">Submit Your Equipment</h2>
                   <p className="text-sm text-muted-foreground mb-6">
-                    Fill out the form below with details about your equipment. Our team will review and respond within 24-48 hours.
+                    Fill out the form below with details about your equipment. Our team will review and respond.
                   </p>
 
                   <Form {...form}>

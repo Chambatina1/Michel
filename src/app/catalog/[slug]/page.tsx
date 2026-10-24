@@ -1,5 +1,6 @@
 'use client';
 
+import { RichText } from '@/components/RichText';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -447,7 +448,7 @@ export default function ProductDetailPage() {
                 {formatPrice(product.price)}
               </p>
 
-              <p className="text-muted-foreground leading-relaxed mb-6">{product.description}</p>
+              <RichText content={product.description} className="mb-6" />
 
               {/* CTAs */}
               <div className="flex flex-wrap gap-3 mb-6">
@@ -628,7 +629,7 @@ export default function ProductDetailPage() {
                 Interested in this equipment?
               </h2>
               <p className="text-sm text-muted-foreground mb-6 text-center">
-                Fill out the form below and our team will get back to you within 24 hours with pricing and availability.
+                Fill out the form below and our team will get back to you with pricing and availability.
               </p>
               <LeadForm type="quote" productId={product.id} />
             </motion.div>

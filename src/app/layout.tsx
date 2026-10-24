@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { AdminLayout } from "@/components/layout/AdminLayout";
+import { OrganizationJsonLd } from "@/components/layout/OrganizationJsonLd";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -103,42 +104,7 @@ export default function RootLayout({
             `,
           }}
         />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "MedicalBusiness",
-              "name": "P&S Medical Device Inc.",
-              "description": "Premium medical imaging equipment sales, expert advisory, repair services, and equipment buybacks.",
-              "url": "https://ps-medical-devices.onrender.com",
-              "telephone": "+1-305-244-9340",
-              "email": "info@psmedicaldevices.com",
-              "address": {
-                "@type": "PostalAddress",
-                "streetAddress": "2234 Winter Woods, Suite 1000",
-                "addressLocality": "Winter Park",
-                "addressRegion": "FL",
-                "postalCode": "32792",
-                "addressCountry": "US"
-              },
-              "geo": {
-                "@type": "GeoCoordinates",
-                "latitude": 28.6008,
-                "longitude": -81.3396
-              },
-              "openingHoursSpecification": {
-                "@type": "OpeningHoursSpecification",
-                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-                "opens": "08:00",
-                "closes": "18:00"
-              },
-              "sameAs": [],
-              "priceRange": "$$",
-              "image": "https://ps-medical-devices.onrender.com/images/logo.jpeg"
-            })
-          }}
-        />
+        <OrganizationJsonLd />
       </body>
     </html>
   );

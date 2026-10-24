@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useSiteSettings, getSetting } from "@/lib/useSiteSettings";
+import { getCompanyInfo } from "@/lib/company";
 
 const quickLinks = [
   { label: "Equipment", href: "/catalog" },
@@ -28,7 +29,7 @@ const quickLinks = [
 const supportLinks = [
   { label: "Contact Us", href: "/contact" },
   { label: "FAQ", href: "/contact#faq" },
-  { label: "Return Policy", href: "/returns" },
+  { label: "Return & Warranty Policy", href: "/returns" },
   { label: "Terms of Service", href: "/terms" },
   { label: "Privacy Policy", href: "/privacy" },
 ];
@@ -44,16 +45,13 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 export function Footer() {
   const { settings } = useSiteSettings();
 
-  const companyName = getSetting(settings, 'company_name', 'P&S Medical Device Inc.');
-  const companyDescription = getSetting(
-    settings,
-    'company_description',
-    'Your trusted partner for premium medical imaging equipment. We provide sales, expert advisory, repair services, and equipment buybacks for healthcare facilities worldwide.'
-  );
-  const phone = getSetting(settings, 'contact_phone', '+1 (305) 244-9340');
-  const email = getSetting(settings, 'contact_email', 'info@psmedicaldevices.com');
-  const address = getSetting(settings, 'contact_address', '2234 Winter Woods, Suite 1000, Winter Park, FL 32792');
-  const hours = getSetting(settings, 'contact_hours', 'Mon-Fri: 8:00 AM - 6:00 PM');
+  const company = getCompanyInfo(settings);
+  const companyName = company.name;
+  const companyDescription = company.description;
+  const phone = company.phone;
+  const email = company.email;
+  const address = company.address;
+  const hours = company.hours;
 
   const facebookUrl = getSetting(settings, 'facebook_url', '');
   const twitterUrl = getSetting(settings, 'twitter_url', '');
@@ -165,7 +163,7 @@ export function Footer() {
                     {phone}
                   </p>
                   <p className="text-xs text-primary-foreground/40">
-                    {hoursLines[0] || 'Mon-Fri 8am-6pm EST'}
+                    {hoursLines[0]}
                   </p>
                 </div>
               </li>
