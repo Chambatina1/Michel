@@ -394,18 +394,29 @@ export default function AdminPage() {
   const [savingPaymentConfig, setSavingPaymentConfig] = useState(false);
 
   /* ─── Auth ─── */
+  // The session lives in an httpOnly cookie checked by the server on every admin API call.
   useEffect(() => {
-    const stored = localStorage.getItem('admin_auth');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        if (parsed && parsed.email) {
-          setIsAuthenticated(true);
-        }
-      } catch { /* ignore */ }
-    }
-    setAuthLoading(false);
+    fetch('/api/auth')
+      .then(res => setIsAuthenticated(res.ok))
+      .catch(() => setIsAuthenticated(false))
+      .finally(() => setAuthLoading(false));
   }, []);
+
+  // If the session expires while working, send the admin back to the login screen.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const originalFetch = window.fetch;
+    window.fetch = async (...args) => {
+      const res = await originalFetch(...args);
+      const url = typeof args[0] === 'string' ? args[0] : args[0] instanceof URL ? args[0].href : args[0].url;
+      if (res.status === 401 && url.includes('/api/') && !url.includes('/api/auth')) {
+        setIsAuthenticated(false);
+        toast.error('Su sesion expiro. Inicie sesion de nuevo; los cambios sin guardar siguen en pantalla hasta que recargue.');
+      }
+      return res;
+    };
+    return () => { window.fetch = originalFetch; };
+  }, [isAuthenticated]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -419,7 +430,6 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (res.ok && data.user) {
-        localStorage.setItem('admin_auth', JSON.stringify(data.user));
         setIsAuthenticated(true);
         toast.success('Welcome back, Admin!');
       } else {
@@ -433,6 +443,7 @@ export default function AdminPage() {
   };
 
   const handleLogout = () => {
+    fetch('/api/auth', { method: 'DELETE' }).catch(() => {});
     localStorage.removeItem('admin_auth');
     setIsAuthenticated(false);
     setLoginForm({ email: '', password: '' });
