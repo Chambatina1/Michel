@@ -7,9 +7,17 @@ import {
 import { db } from '@/lib/db';
 import { evaluatePromo } from '@/lib/promo';
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+// Stripe redirects back to the domain the customer is browsing, unless a base URL is configured
+function getBaseUrl(request: NextRequest): string {
+  const configured = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_APP_URL;
+  if (configured) return configured.replace(/\/$/, '');
+  const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
+  const proto = request.headers.get('x-forwarded-proto') || 'https';
+  return host ? `${proto}://${host}` : request.nextUrl.origin;
+}
 
 export async function POST(request: NextRequest) {
+  const BASE_URL = getBaseUrl(request);
   try {
     const body = await request.json();
     const { productId, customerEmail, shippingType, cart, shippingAddress, shippingMethod } = body;

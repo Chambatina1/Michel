@@ -221,12 +221,12 @@ export function Footer() {
             >
               Privacy
             </Link>
-            <Link
-              href="/sitemap"
+            <a
+              href="/sitemap.xml"
               className="text-xs text-primary-foreground/50 transition-colors hover:text-accent"
             >
               Sitemap
-            </Link>
+            </a>
           </div>
         </div>
       </div>

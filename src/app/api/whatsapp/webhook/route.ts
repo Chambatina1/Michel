@@ -80,7 +80,7 @@ async function sendAutoReply(to: string, userMessage: string) {
     const lower = userMessage.toLowerCase();
 
     // Smart keyword-based auto-reply
-    let reply = 'Thank you for contacting PS Medical Devices! 🏥\n\nOur team will respond to you shortly. For immediate assistance:\n\n📞 +1 (305) 244-9340\n📧 michelgg0102780@gmail.com\n🌐 ps-medical-devices.onrender.com\n\nHours: Mon-Fri, 8:00 AM - 6:00 PM CST';
+    let reply = 'Thank you for contacting PS Medical Devices! 🏥\n\nOur team will respond to you shortly. For immediate assistance:\n\n📞 +1 (305) 244-9340\n📧 michelgg0102780@gmail.com\n🌐 psmedicaldevices.com\n\nHours: Mon-Fri, 8:00 AM - 6:00 PM CST';
 
     if (lower.includes('precio') || lower.includes('price') || lower.includes('cotización') || lower.includes('quote') || lower.includes('cost')) {
       reply = 'Thank you for your interest! 💰\n\nFor personalized pricing and quotes, please provide:\n- Equipment type you need\n- Brand preference\n- New or refurbished\n- Your facility location\n\nOur team will prepare a custom quote. You can also call us directly:\n📞 +1 (305) 244-9340';
@@ -89,7 +89,7 @@ async function sendAutoReply(to: string, userMessage: string) {
     } else if (lower.includes('repar') || lower.includes('service') || lower.includes('mantenimiento') || lower.includes('repair')) {
       reply = 'PS Medical Devices offers expert repair services! 🔧\n\nOur certified technicians provide:\n- Preventive maintenance\n- Emergency repairs\n- Equipment calibration\n- Software updates\n\n📞 Call +1 (305) 244-9340 for service requests';
     } else if (lower.includes('ct') || lower.includes('mri') || lower.includes('rayos') || lower.includes('x-ray') || lower.includes('ultraso') || lower.includes('ecogra') || lower.includes('oftalm')) {
-      reply = 'Great choice! We have extensive inventory in that category. 🏥\n\nFor current availability and pricing:\n📞 +1 (305) 244-9340\n📧 michelgg0102780@gmail.com\n\nOr visit our website:\n🌐 ps-medical-devices.onrender.com';
+      reply = 'Great choice! We have extensive inventory in that category. 🏥\n\nFor current availability and pricing:\n📞 +1 (305) 244-9340\n📧 michelgg0102780@gmail.com\n\nOr visit our website:\n🌐 psmedicaldevices.com';
     }
 
     const response = await fetch(
