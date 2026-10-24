@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { ADMIN_COOKIE, adminCredentials, createSessionToken, verifySessionToken } from '@/lib/admin-session';
 
-// Hardcoded admin credentials (works even if database is not initialized)
-const ADMIN_CREDENTIALS = {
-  email: 'admin@psmedicaldevices.com',
-  password: 'admin123',
-  name: 'PS Admin',
-  role: 'admin',
-};
+function adminUser(email: string) {
+  return { id: 'admin-001', email, name: 'PS Admin', role: 'admin' };
+}
 
+// GET /api/auth — returns the admin if the session cookie is valid
+export async function GET(request: NextRequest) {
+  const session = await verifySessionToken(request.cookies.get(ADMIN_COOKIE)?.value);
+  if (!session) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  }
+  return NextResponse.json({ user: adminUser(session.email) });
+}
+
+// POST /api/auth — log in and set the session cookie
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -20,23 +27,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Direct credential check (no database dependency)
-    if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
-      return NextResponse.json({
-        user: {
-          id: 'admin-001',
-          email: ADMIN_CREDENTIALS.email,
-          name: ADMIN_CREDENTIALS.name,
-          role: ADMIN_CREDENTIALS.role,
-        },
-        message: 'Authentication successful',
-      });
+    const creds = adminCredentials();
+    if (email.trim().toLowerCase() !== creds.email.toLowerCase() || password !== creds.password) {
+      return NextResponse.json(
+        { error: 'Invalid credentials' },
+        { status: 401 }
+      );
     }
 
-    return NextResponse.json(
-      { error: 'Invalid credentials' },
-      { status: 401 }
-    );
+    const { token, maxAge } = await createSessionToken(creds.email);
+    const response = NextResponse.json({
+      user: adminUser(creds.email),
+      message: 'Authentication successful',
+    });
+    response.cookies.set(ADMIN_COOKIE, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge,
+    });
+    return response;
   } catch (error) {
     console.error('Error in auth API:', error);
     return NextResponse.json(
@@ -44,4 +55,11 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// DELETE /api/auth — log out
+export async function DELETE() {
+  const response = NextResponse.json({ success: true });
+  response.cookies.set(ADMIN_COOKIE, '', { httpOnly: true, path: '/', maxAge: 0 });
+  return response;
 }
