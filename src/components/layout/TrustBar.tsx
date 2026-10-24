@@ -36,8 +36,8 @@ const defaultTrustItems = [
   },
   {
     icon: "Award",
-    label: "Certified Refurbished",
-    description: "Quality-assured pre-owned",
+    label: "Refurbished Equipment",
+    description: "New, used & refurbished options",
   },
 ];
 
@@ -45,6 +45,23 @@ interface TrustItem {
   icon: string;
   label: string;
   description: string;
+}
+
+// Accepts the JSON list saved by older versions, or one item per line as the admin
+// describes it: "IconName|Label|Description".
+function parseTrustItems(raw: string): TrustItem[] {
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+  } catch {
+    const items = raw
+      .split("\n")
+      .map((line) => line.split("|").map((part) => part.trim()))
+      .filter((parts) => parts.length >= 2 && parts[1])
+      .map(([icon, label, description = ""]) => ({ icon, label, description }));
+    if (items.length > 0) return items;
+  }
+  return defaultTrustItems;
 }
 
 export function TrustBar() {
@@ -56,15 +73,7 @@ export function TrustBar() {
     JSON.stringify(defaultTrustItems)
   );
 
-  let trustItems: TrustItem[];
-  try {
-    trustItems = JSON.parse(trustBarRaw);
-    if (!Array.isArray(trustItems) || trustItems.length === 0) {
-      trustItems = defaultTrustItems;
-    }
-  } catch {
-    trustItems = defaultTrustItems;
-  }
+  const trustItems = parseTrustItems(trustBarRaw);
 
   const getIcon = (iconName: string) => {
     return iconMap[iconName] || ShieldCheck;

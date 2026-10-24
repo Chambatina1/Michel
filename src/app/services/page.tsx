@@ -27,6 +27,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { CTASection } from '@/components/layout/CTASection';
+import { useSiteSettings, getSetting } from '@/lib/useSiteSettings';
 
 /* ── Icon mapper: convert string name → lucide component ── */
 const iconMap: Record<string, LucideIcon> = {
@@ -78,6 +79,14 @@ interface ServiceData {
 export default function ServicesPage() {
   const [services, setServices] = useState<ServiceData[]>([]);
   const [loading, setLoading] = useState(true);
+  const { settings } = useSiteSettings();
+  const serviceArea = getSetting(settings, 'services_area_text');
+  const servicesTitle = getSetting(settings, 'services_page_title');
+  const servicesSubtitle = getSetting(
+    settings,
+    'services_page_subtitle',
+    getSetting(settings, 'services_page_description', 'Services for the diagnostic imaging and ophthalmology equipment we buy and sell.')
+  );
 
   useEffect(() => {
     async function fetchServices() {
@@ -107,9 +116,13 @@ export default function ServicesPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            Comprehensive Medical
-            <br />
-            <span className="text-teal-300">Equipment Services</span>
+            {servicesTitle ? servicesTitle : (
+              <>
+                Medical Equipment
+                <br />
+                <span className="text-teal-300">Services</span>
+              </>
+            )}
           </motion.h1>
           <motion.p
             className="mt-4 text-base text-white/75 sm:text-lg max-w-2xl mx-auto"
@@ -117,7 +130,7 @@ export default function ServicesPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            From repair and maintenance to training and consultative advisory, we provide end-to-end support for all your medical imaging equipment needs.
+            {servicesSubtitle}
           </motion.p>
         </div>
       </section>
@@ -302,7 +315,7 @@ export default function ServicesPage() {
               {
                 step: 3,
                 title: 'Service Delivery',
-                description: 'Our certified team delivers the service on-site with minimal disruption.',
+                description: 'Our team carries out the agreed service and keeps you informed.',
                 icon: Wrench,
               },
               {
@@ -337,46 +350,22 @@ export default function ServicesPage() {
         </div>
       </section>
 
-      {/* Service Area Coverage */}
-      <section className="py-14 sm:py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            variants={fadeInUp}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            transition={{ duration: 0.4 }}
-            className="text-center"
-          >
+      {/* Service Area — text from Admin > Paginas; hidden when empty */}
+      {serviceArea && (
+        <section className="py-14 sm:py-20">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
             <MapPin className="h-12 w-12 text-teal-600 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-foreground sm:text-3xl mb-3">Service Area Coverage</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto mb-8">
-              We provide equipment services across the entire United States. Our nationwide network of certified technicians ensures rapid response times wherever your facility is located.
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-3xl mx-auto">
-              {[
-                { region: 'Northeast', states: 'NY, NJ, PA, CT, MA' },
-                { region: 'Southeast', states: 'FL, GA, NC, VA, TX' },
-                { region: 'Midwest', states: 'IL, OH, MI, MN, WI' },
-                { region: 'West Coast', states: 'CA, WA, OR, AZ, NV' },
-              ].map((area) => (
-                <Card key={area.region}>
-                  <CardContent className="p-4 text-center">
-                    <h3 className="font-semibold text-foreground text-sm">{area.region}</h3>
-                    <p className="text-xs text-muted-foreground mt-1">{area.states}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-      </section>
+            <h2 className="text-2xl font-bold text-foreground sm:text-3xl mb-3">Service Area</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto whitespace-pre-line">{serviceArea}</p>
+          </div>
+        </section>
+      )}
 
       {/* CTA */}
       <CTASection
         title="Need Equipment Service or Support?"
-        description="Our expert team is standing by to help. Whether it's a repair, training, or equipment consultation, we're here for you."
-        buttonText="Contact Us Now"
+        description="Tell us what you need and our team will confirm scope and availability."
+        buttonText={getSetting(settings, 'services_cta_btn', 'Contact Us')}
         buttonLink="/contact?type=support"
         variant="accent"
       />

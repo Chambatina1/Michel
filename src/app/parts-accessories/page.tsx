@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { LeadForm } from "@/components/layout/LeadForm";
+import { useSiteSettings, getSetting } from "@/lib/useSiteSettings";
 
 /* ── Icon mapping for dynamic parts subcategories ── */
 const PARTS_ICON_MAP: Record<string, React.ElementType> = {
@@ -54,6 +55,7 @@ interface Category {
 export default function PartsAccessoriesPage() {
   const [partsCategory, setPartsCategory] = useState<Category | null>(null);
   const [loading, setLoading] = useState(true);
+  const { settings } = useSiteSettings();
 
   useEffect(() => {
     fetch('/api/categories')
@@ -77,10 +79,10 @@ export default function PartsAccessoriesPage() {
       <section className="gradient-primary py-14 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-3xl font-bold text-white sm:text-4xl lg:text-5xl">
-            Parts & Accessories
+            {getSetting(settings, 'parts_page_title', 'Parts & Accessories')}
           </h1>
           <p className="mt-4 text-base text-white/75 sm:text-lg max-w-2xl mx-auto">
-            Find replacement parts, accessories, and components for your medical imaging and ophthalmology equipment
+            {getSetting(settings, 'parts_page_subtitle', 'Find replacement parts, accessories, and components for your medical imaging and ophthalmology equipment')}
           </p>
         </div>
       </section>
@@ -154,7 +156,7 @@ export default function PartsAccessoriesPage() {
               Looking for a Specific Part?
             </h2>
             <p className="text-base text-muted-foreground mb-8 text-center">
-              Tell us what you need and our team will source it for you. We have access to parts from all major manufacturers.
+              {getSetting(settings, 'parts_page_description', 'Tell us what you need and our team will check availability for you.')}
             </p>
             <LeadForm type="quote" />
           </div>

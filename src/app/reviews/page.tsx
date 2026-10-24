@@ -21,6 +21,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useSiteSettings } from '@/lib/useSiteSettings';
+import { getCompanyInfo } from '@/lib/company';
 import {
   Dialog,
   DialogContent,
@@ -381,6 +383,8 @@ function LeaveReviewDialog() {
 export default function ReviewsPage() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
+  const { settings } = useSiteSettings();
+  const googleReviewUrl = getCompanyInfo(settings).googleReviewUrl;
 
   const fetchReviews = useCallback(async () => {
     setLoading(true);
@@ -477,12 +481,14 @@ export default function ReviewsPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <LeaveReviewDialog />
-            <Button asChild variant="outline" size="lg">
-              <a href="https://search.google.com" target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="mr-2 h-4 w-4" />
-                Leave a Review on Google
-              </a>
-            </Button>
+            {googleReviewUrl && (
+              <Button asChild variant="outline" size="lg">
+                <a href={googleReviewUrl} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Leave a Review on Google
+                </a>
+              </Button>
+            )}
           </div>
         </div>
       </section>

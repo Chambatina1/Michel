@@ -15,6 +15,7 @@ import { Separator } from '@/components/ui/separator';
 import { LeadForm } from '@/components/layout/LeadForm';
 import { CTASection } from '@/components/layout/CTASection';
 import { useSiteSettings, getSetting } from '@/lib/useSiteSettings';
+import { getCompanyInfo } from '@/lib/company';
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -24,11 +25,8 @@ const fadeInUp = {
 export default function ContactPage() {
   const { settings } = useSiteSettings();
 
-  const phone = getSetting(settings, 'contact_phone', '+1 (305) 244-9340');
-  const email = getSetting(settings, 'contact_email', 'info@psmedicaldevices.com');
-  const address = getSetting(settings, 'contact_address', '2234 Winter Woods, Suite 1000, Winter Park, FL 32792');
-  const hours = getSetting(settings, 'contact_hours', 'Mon-Fri: 8:00 AM - 6:00 PM\nSat: 9:00 AM - 1:00 PM');
-  const mapUrl = getSetting(settings, 'contact_map_url', '');
+  const company = getCompanyInfo(settings);
+  const { phone, email, address, hours, mapUrl } = company;
 
   const hoursLines = hours.split(/\n/).filter(Boolean);
   const phoneHref = phone.replace(/[^+\d]/g, '');
@@ -44,7 +42,7 @@ export default function ContactPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            Get In Touch
+            {getSetting(settings, 'contact_page_title', 'Get In Touch')}
           </motion.h1>
           <motion.p
             className="mt-4 text-base text-white/75 sm:text-lg max-w-2xl mx-auto"
@@ -52,7 +50,7 @@ export default function ContactPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            Have a question about our equipment, need service, or want to sell your used devices? We&apos;re here to help.
+            {getSetting(settings, 'contact_page_subtitle', "Have a question about our equipment, need service, or want to sell your used devices? We're here to help.")}
           </motion.p>
         </div>
       </section>
@@ -85,7 +83,7 @@ export default function ContactPage() {
               <div>
                 <h2 className="text-xl font-bold text-foreground mb-1">Contact Information</h2>
                 <p className="text-sm text-muted-foreground">
-                  Reach us through any of these channels. We typically respond within 24 hours.
+                  Reach us through any of these channels. We will get back to you as soon as possible.
                 </p>
               </div>
 
@@ -114,7 +112,7 @@ export default function ContactPage() {
                     <Button asChild variant="link" className="h-auto p-0 text-teal-600 hover:text-teal-700">
                       <a href={`mailto:${email}`}>{email}</a>
                     </Button>
-                    <p className="text-xs text-muted-foreground mt-0.5">We reply within 24 hours</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">We reply as soon as possible</p>
                   </div>
                 </CardContent>
               </Card>
