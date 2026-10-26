@@ -332,7 +332,7 @@ export function AIChatWidget() {
                   </Button>
                 </form>
                 <p className="mt-2 text-center text-[10px] text-gray-400">
-                  Powered by DeepSeek AI
+                  Powered by AI
                 </p>
               </div>
             </div>

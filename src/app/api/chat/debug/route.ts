@@ -1,22 +1,26 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { AI_PROVIDERS } from '@/lib/ai-providers';
 
 const prisma = new PrismaClient();
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   const status: Record<string, string> = {};
 
-  // Check DeepSeek (primary chat backend). Never echo the key itself.
-  const deepseekKey = process.env.DEEPSEEK_API_KEY?.trim() || '';
-  status['deepseek-key-set'] = deepseekKey ? 'yes' : 'no';
-  if (deepseekKey) {
+  // Check each AI provider with a tiny test call. Never echo the key itself.
+  for (const provider of AI_PROVIDERS) {
+    status[`${provider.name}-key-set`] = provider.key ? 'yes' : 'no';
+    if (!provider.key) continue;
+    status[`${provider.name}-model`] = provider.model;
     try {
       const testStart = Date.now();
-      const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      const res = await fetch(provider.url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${deepseekKey}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${provider.key}` },
         body: JSON.stringify({
-          model: 'deepseek-chat',
+          model: provider.model,
           messages: [
             { role: 'system', content: 'Respond with only: OK' },
             { role: 'user', content: 'test' },
@@ -24,15 +28,15 @@ export async function GET() {
           max_tokens: 5,
         }),
       });
-      status['deepseek-latency'] = `${Date.now() - testStart}ms`;
+      status[`${provider.name}-latency`] = `${Date.now() - testStart}ms`;
       if (res.ok) {
         const data = await res.json();
-        status['deepseek-test'] = data?.choices?.[0]?.message?.content || 'no response';
+        status[`${provider.name}-test`] = data?.choices?.[0]?.message?.content || 'no response';
       } else {
-        status['deepseek-test'] = `error ${res.status}: ${(await res.text()).slice(0, 200)}`;
+        status[`${provider.name}-test`] = `error ${res.status}: ${(await res.text()).slice(0, 200)}`;
       }
     } catch (error: any) {
-      status['deepseek-test'] = `error: ${error.message}`;
+      status[`${provider.name}-test`] = `error: ${error.message}`;
     }
   }
 
@@ -57,9 +61,6 @@ export async function GET() {
   } catch (error: any) {
     status['z-ai-sdk'] = `error: ${error.message}`;
   }
-
-  // Check OpenAI
-  status['openai-key-set'] = process.env.OPENAI_API_KEY ? 'yes' : 'no';
 
   // Check database
   try {

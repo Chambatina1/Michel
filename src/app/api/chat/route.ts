@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { loadCompanyInfo, type CompanyInfo } from '@/lib/company';
-
-// DeepSeek API key comes only from the environment (Render > Environment > DEEPSEEK_API_KEY)
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY?.trim() || '';
+import { AI_PROVIDERS } from '@/lib/ai-providers';
 
 function buildSystemPrompt(company: CompanyInfo): string {
   return `You are the AI assistant for ${company.name}, a company that buys, sells, refurbishes and services medical equipment, mainly diagnostic imaging and ophthalmology systems. You are warm, professional, and knowledgeable. Your goal is to help customers find the right equipment, answer questions about products and services, and guide them to make informed decisions.
@@ -102,40 +100,45 @@ export async function POST(request: NextRequest) {
     let assistantMessage: string = '';
     let aiSource: string = '';
 
-    // ═══ PRIMARY: DeepSeek AI ═══
-    if (!DEEPSEEK_API_KEY) {
-      console.error('DeepSeek skipped: DEEPSEEK_API_KEY is not set');
-    } else try {
-      console.log('Calling DeepSeek API...');
-      const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: 'deepseek-chat',
-          messages,
-          temperature: 0.7,
-          max_tokens: 800,
-          presence_penalty: 0.6,
-          frequency_penalty: 0.3,
-        }),
-      });
+    // ═══ PRIMARY: OpenAI, then DeepSeek (whichever keys are set) ═══
+    for (const provider of AI_PROVIDERS) {
+      if (assistantMessage) break;
+      if (!provider.key) continue;
+      try {
+        console.log(`Calling ${provider.name} API...`);
+        const response = await fetch(provider.url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${provider.key}`,
+          },
+          body: JSON.stringify({
+            model: provider.model,
+            messages,
+            temperature: 0.7,
+            max_tokens: 800,
+            presence_penalty: 0.6,
+            frequency_penalty: 0.3,
+          }),
+        });
 
-      if (response.ok) {
-        const data = await response.json();
-        assistantMessage = data?.choices?.[0]?.message?.content || '';
-        if (assistantMessage) {
-          aiSource = 'deepseek';
-          console.log('DeepSeek response successful');
+        if (response.ok) {
+          const data = await response.json();
+          assistantMessage = data?.choices?.[0]?.message?.content || '';
+          if (assistantMessage) {
+            aiSource = provider.name;
+            console.log(`${provider.name} response successful`);
+          }
+        } else {
+          const errorText = await response.text();
+          console.error(`${provider.name} API error:`, response.status, errorText);
         }
-      } else {
-        const errorText = await response.text();
-        console.error('DeepSeek API error:', response.status, errorText);
+      } catch (aiError) {
+        console.error(`${provider.name} connection error:`, aiError);
       }
-    } catch (aiError) {
-      console.error('DeepSeek connection error:', aiError);
+    }
+    if (!AI_PROVIDERS.some(p => p.key)) {
+      console.error('AI chat: neither OPENAI_API_KEY nor DEEPSEEK_API_KEY is set');
     }
 
     // ═══ FALLBACK 1: z-ai-web-dev-sdk ═══
