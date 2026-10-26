@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // WhatsApp Business API configuration
 const WHATSAPP_API_VERSION = 'v21.0';
 const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID || '1047975088407521';
-const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN || 'EAAsB3D6DI6MBRcehuFQNDufXsZAmD0mZCgRAgZBNy2EYR2sSh01q9DOXRTJHiDCMMbPXm9VPzwQtw5cIDYZBRhOGBq8oiiXZBcoTluLmp7ZCGytZCAyGwvgHIbWYq15U2EN4sfrsELv5ze239IoSDaZAujFP4ZCGQYVeJdtfAQhwp90vZA7yRHywiphZBCLlFadVG6N8qpYdvGnGlJA5g5gYjz3L7gUGsThetLi7mOpszyIZAb62vrgxyP0J0kXQwlKjFMOYhXyzsUpV57cbfCjUmHcoFe7ZCSBZCvC42QymZA5NLsZD';
+const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN || '';
 
 // PS Medical Devices phone number (destination - the business receives messages)
 const BUSINESS_PHONE = '13052449340'; // +1 (305) 244-9340
