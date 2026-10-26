@@ -315,3 +315,62 @@ export function verifyWebhookSignature(
 export function getSessionUrl(sessionId: string) {
   return `https://dashboard.stripe.com/payments/${sessionId}`;
 }
+
+/**
+ * Create a Stripe invoice and have Stripe email it to the customer.
+ * The email carries a "Pay" button to Stripe's hosted invoice page.
+ */
+export async function sendInvoiceEmail(params: {
+  customerName: string;
+  customerEmail: string;
+  customerPhone?: string | null;
+  items: { description: string; amountInCents: number }[];
+  daysUntilDue?: number;
+  memo?: string;
+  metadata?: Record<string, string>;
+  currency?: string;
+}) {
+  const {
+    customerName,
+    customerEmail,
+    customerPhone,
+    items,
+    daysUntilDue = 7,
+    memo,
+    metadata,
+    currency = 'usd',
+  } = params;
+
+  // Reuse the Stripe customer for this email so their invoices stay together
+  const existing = await stripe.customers.list({ email: customerEmail, limit: 1 });
+  const customer =
+    existing.data[0] ||
+    (await stripe.customers.create({
+      name: customerName,
+      email: customerEmail,
+      phone: customerPhone || undefined,
+    }));
+
+  const invoice = await stripe.invoices.create({
+    customer: customer.id,
+    collection_method: 'send_invoice',
+    days_until_due: daysUntilDue,
+    currency,
+    description: memo,
+    metadata,
+    pending_invoice_items_behavior: 'exclude',
+  });
+
+  for (const item of items) {
+    await stripe.invoiceItems.create({
+      customer: customer.id,
+      invoice: invoice.id,
+      amount: item.amountInCents,
+      currency,
+      description: item.description,
+    });
+  }
+
+  const finalized = await stripe.invoices.finalizeInvoice(invoice.id!);
+  return stripe.invoices.sendInvoice(finalized.id!);
+}
