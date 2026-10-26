@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { loadCompanyInfo, type CompanyInfo } from '@/lib/company';
 
-// DeepSeek API Key - fallback hardcoded in case env var is not set
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || 'sk-7bb9cff20c1349a2b6c561b96da0b1c9';
+// DeepSeek API key comes only from the environment (Render > Environment > DEEPSEEK_API_KEY)
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY?.trim() || '';
 
 function buildSystemPrompt(company: CompanyInfo): string {
   return `You are the AI assistant for ${company.name}, a company that buys, sells, refurbishes and services medical equipment, mainly diagnostic imaging and ophthalmology systems. You are warm, professional, and knowledgeable. Your goal is to help customers find the right equipment, answer questions about products and services, and guide them to make informed decisions.
@@ -103,7 +103,9 @@ export async function POST(request: NextRequest) {
     let aiSource: string = '';
 
     // ═══ PRIMARY: DeepSeek AI ═══
-    try {
+    if (!DEEPSEEK_API_KEY) {
+      console.error('DeepSeek skipped: DEEPSEEK_API_KEY is not set');
+    } else try {
       console.log('Calling DeepSeek API...');
       const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
         method: 'POST',

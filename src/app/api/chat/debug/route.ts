@@ -6,6 +6,36 @@ const prisma = new PrismaClient();
 export async function GET() {
   const status: Record<string, string> = {};
 
+  // Check DeepSeek (primary chat backend). Never echo the key itself.
+  const deepseekKey = process.env.DEEPSEEK_API_KEY?.trim() || '';
+  status['deepseek-key-set'] = deepseekKey ? 'yes' : 'no';
+  if (deepseekKey) {
+    try {
+      const testStart = Date.now();
+      const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${deepseekKey}` },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: [
+            { role: 'system', content: 'Respond with only: OK' },
+            { role: 'user', content: 'test' },
+          ],
+          max_tokens: 5,
+        }),
+      });
+      status['deepseek-latency'] = `${Date.now() - testStart}ms`;
+      if (res.ok) {
+        const data = await res.json();
+        status['deepseek-test'] = data?.choices?.[0]?.message?.content || 'no response';
+      } else {
+        status['deepseek-test'] = `error ${res.status}: ${(await res.text()).slice(0, 200)}`;
+      }
+    } catch (error: any) {
+      status['deepseek-test'] = `error: ${error.message}`;
+    }
+  }
+
   // Check Z-AI SDK
   try {
     const ZAI = (await import('z-ai-web-dev-sdk')).default;
@@ -46,7 +76,7 @@ export async function GET() {
 
   return NextResponse.json({
     timestamp: new Date().toISOString(),
-    service: 'ps-medical-v2',
+    service: 'ps-medical-v3',
     backends: status,
   });
 }
