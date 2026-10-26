@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | P&S Medical Device Inc.",
+  title: "Privacy Policy",
+  alternates: { canonical: "/privacy" },
   description: "How P&S Medical Device Inc. collects and uses personal information on psmedicaldevices.com.",
 };
 

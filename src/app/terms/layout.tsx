@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Service | P&S Medical Device Inc.",
+  title: "Terms of Service",
+  alternates: { canonical: "/terms" },
   description: "Terms of Service for psmedicaldevices.com and purchases from P&S Medical Device Inc.",
 };
 
