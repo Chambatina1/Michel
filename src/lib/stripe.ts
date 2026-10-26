@@ -230,23 +230,11 @@ export async function createCartCheckoutSession(params: {
     line_items: stripeLineItems,
     shipping_options: [stripeShippingOption],
     metadata,
-    customer_email: shippingAddress.email,
+    customer_email: shippingAddress.email || undefined,
     success_url: successUrl,
     cancel_url: cancelUrl,
     shipping_address_collection: {
       allowed_countries: ['US', 'CA', 'MX'],
-    },
-    // Prefill shipping info
-    customer_details: {
-      address: {
-        country: shippingAddress.country === 'US' ? 'US' : shippingAddress.country === 'CA' ? 'CA' : 'MX',
-        state: shippingAddress.state,
-        city: shippingAddress.city,
-        line1: shippingAddress.address,
-        postal_code: shippingAddress.zip,
-      },
-      name: shippingAddress.name,
-      phone: shippingAddress.phone,
     },
   };
 

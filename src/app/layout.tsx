@@ -1,9 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { OrganizationJsonLd } from "@/components/layout/OrganizationJsonLd";
+import { SITE_URL, SITE_NAME, DEFAULT_OG_IMAGE } from "@/lib/site";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,10 +17,23 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "P&S Medical Device Inc. | Trusted Medical Equipment Partner",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Medical Equipment by Cuban Engineers | P&S Medical Device Inc.",
+    template: "%s | P&S Medical Device Inc.",
+  },
   description:
-    "Premium medical imaging equipment sales, expert advisory, repair services, and equipment buybacks. CT, MRI, X-Ray, Ultrasound, and Ophthalmology equipment.",
+    "Cuban engineers selling, repairing and buying CT, MRI, X-Ray, ultrasound and ophthalmology equipment. Free estimates, 5-year warranty, export to all of the Americas.",
   keywords: [
+    "Cuban engineers medical equipment",
+    "ingenieros cubanos equipos médicos",
+    "free medical equipment estimate",
+    "5-year warranty medical equipment",
+    "medical equipment export Latin America",
+    "equipos médicos con garantía de 5 años",
+    "estimados gratis equipos médicos",
+    "exportación de equipos médicos a Latinoamérica",
+    "equipos médicos usados y reacondicionados",
     "medical devices",
     "medical imaging equipment",
     "CT scanner",
@@ -33,7 +47,8 @@ export const metadata: Metadata = {
     "sell medical equipment",
     "P&S Medical Device Inc.",
   ],
-  authors: [{ name: "P&S Medical Device Inc." }],
+  authors: [{ name: SITE_NAME }],
+  alternates: { canonical: "/" },
   manifest: "/manifest.json",
   icons: {
     icon: [
@@ -47,18 +62,21 @@ export const metadata: Metadata = {
     ],
   },
   openGraph: {
-    title: "P&S Medical Device Inc. | Trusted Medical Equipment Partner",
+    title: "Medical Equipment by Cuban Engineers | P&S Medical Device Inc.",
     description:
-      "Premium medical imaging equipment sales, expert advisory, repair services, and equipment buybacks. CT, MRI, X-Ray, Ultrasound, and Ophthalmology equipment.",
-    siteName: "P&S Medical Device Inc.",
+      "Cuban engineers selling, repairing and buying CT, MRI, X-Ray, ultrasound and ophthalmology equipment. Free estimates, 5-year warranty, export to all of the Americas.",
+    siteName: SITE_NAME,
     type: "website",
     locale: "en_US",
+    alternateLocale: ["es_US", "es_419"],
+    images: [{ url: DEFAULT_OG_IMAGE, alt: SITE_NAME }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "P&S Medical Device Inc. | Trusted Medical Equipment Partner",
+    title: "Medical Equipment by Cuban Engineers | P&S Medical Device Inc.",
     description:
-      "Premium medical imaging equipment sales, expert advisory, repair services, and equipment buybacks.",
+      "Cuban engineers selling, repairing and buying CT, MRI, X-Ray, ultrasound and ophthalmology equipment. Free estimates, 5-year warranty, export to all of the Americas.",
+    images: [DEFAULT_OG_IMAGE],
   },
   robots: {
     index: true,
@@ -69,9 +87,12 @@ export const metadata: Metadata = {
     "apple-mobile-web-app-capable": "yes",
     "apple-mobile-web-app-status-bar-style": "default",
     "apple-mobile-web-app-title": "P&S Medical",
-    "theme-color": "#0891b2",
     "msapplication-TileColor": "#0891b2",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0891b2",
 };
 
 export default function RootLayout({
@@ -81,7 +102,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <meta name="theme-color" content="#0891b2" />
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >

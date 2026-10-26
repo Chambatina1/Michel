@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Sitemap | P&S Medical Device Inc.",
+  title: "Sitemap",
+  alternates: { canonical: "/sitemap" },
   description: "All pages on psmedicaldevices.com.",
 };
 
