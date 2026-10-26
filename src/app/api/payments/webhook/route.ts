@@ -37,6 +37,12 @@ export async function POST(request: NextRequest) {
         break;
       }
 
+      case 'invoice.paid': {
+        const invoice = event.data.object;
+        await handleInvoicePaid(invoice);
+        break;
+      }
+
       case 'payment_intent.succeeded': {
         const paymentIntent = event.data.object;
         console.log(`Payment succeeded: ${paymentIntent.id}`);
@@ -112,6 +118,28 @@ async function handleCheckoutComplete(session: any) {
     console.log(`Product ${productId} marked as sold and order created after successful payment`);
   } catch (dbError) {
     console.error('Failed to update product status or create order:', dbError);
+  }
+}
+
+/**
+ * Handle a paid invoice sent from Admin > Leads - complete the order and convert the lead
+ */
+async function handleInvoicePaid(invoice: any) {
+  const leadId = invoice.metadata?.leadId;
+  if (!leadId) return; // not an invoice sent from the admin
+
+  try {
+    await db.order.updateMany({
+      where: { stripeSessionId: invoice.id },
+      data: { status: 'completed' },
+    });
+    await db.lead.updateMany({
+      where: { id: leadId },
+      data: { status: 'converted' },
+    });
+    console.log(`Invoice ${invoice.id} paid; lead ${leadId} converted`);
+  } catch (dbError) {
+    console.error('Failed to record paid invoice:', dbError);
   }
 }
 

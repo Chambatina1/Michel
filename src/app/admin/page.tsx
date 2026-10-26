@@ -300,6 +300,9 @@ export default function AdminPage() {
   const [deleteTarget, setDeleteTarget] = useState<{ type: string; id: string; name: string } | null>(null);
   const [leadDetailOpen, setLeadDetailOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [invoiceForm, setInvoiceForm] = useState({ description: '', amount: '', shipping: '', daysUntilDue: '7' });
+  const [sendingInvoice, setSendingInvoice] = useState(false);
+  const [sentInvoiceUrl, setSentInvoiceUrl] = useState<string | null>(null);
   const [sellDetailOpen, setSellDetailOpen] = useState(false);
   const [selectedSellRequest, setSelectedSellRequest] = useState<SellRequest | null>(null);
   const [userDialogOpen, setUserDialogOpen] = useState(false);
@@ -1086,6 +1089,31 @@ export default function AdminPage() {
   };
 
   /* ─── Lead actions ─── */
+  useEffect(() => {
+    setInvoiceForm({ description: selectedLead?.productName || '', amount: '', shipping: '', daysUntilDue: '7' });
+    setSentInvoiceUrl(null);
+  }, [selectedLead]);
+
+  const sendLeadInvoice = async () => {
+    if (!selectedLead) return;
+    if (!confirm(`Enviar una factura de $${invoiceForm.amount} a ${selectedLead.email}?`)) return;
+    setSendingInvoice(true);
+    try {
+      const res = await fetch(`/api/admin/leads/${selectedLead.id}/invoice`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(invoiceForm),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(`Factura ${data.number} enviada a ${selectedLead.email}`);
+        setSentInvoiceUrl(data.url);
+        fetchDashboardData();
+      } else toast.error(data.error || 'No se pudo enviar la factura');
+    } catch { toast.error('No se pudo enviar la factura'); }
+    finally { setSendingInvoice(false); }
+  };
+
   const updateLeadStatus = async (id: string, status: string) => {
     try {
       const res = await fetch(`/api/admin/leads/${id}`, {
@@ -3658,6 +3686,42 @@ export default function AdminPage() {
                 <p className="text-xs font-medium text-gray-500 mb-1">Message</p>
                 <p className="text-sm bg-gray-50 rounded-lg p-3">{selectedLead.message}</p>
               </div>
+              {selectedLead.type !== 'newsletter' && (
+                <>
+                  <Separator />
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">Enviar factura</p>
+                      <p className="text-xs text-gray-500">Stripe le manda al cliente un correo con la factura y un boton para pagar en linea.</p>
+                    </div>
+                    <div>
+                      <Label htmlFor="invoice-description" className="text-xs">Descripcion</Label>
+                      <Input id="invoice-description" value={invoiceForm.description} onChange={(e) => setInvoiceForm({ ...invoiceForm, description: e.target.value })} placeholder="Equipo o servicio" />
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <Label htmlFor="invoice-amount" className="text-xs">Precio (USD)</Label>
+                        <Input id="invoice-amount" type="number" min="0" step="0.01" value={invoiceForm.amount} onChange={(e) => setInvoiceForm({ ...invoiceForm, amount: e.target.value })} />
+                      </div>
+                      <div>
+                        <Label htmlFor="invoice-shipping" className="text-xs">Envio (USD)</Label>
+                        <Input id="invoice-shipping" type="number" min="0" step="0.01" value={invoiceForm.shipping} onChange={(e) => setInvoiceForm({ ...invoiceForm, shipping: e.target.value })} placeholder="0" />
+                      </div>
+                      <div>
+                        <Label htmlFor="invoice-days" className="text-xs">Dias para pagar</Label>
+                        <Input id="invoice-days" type="number" min="1" max="90" value={invoiceForm.daysUntilDue} onChange={(e) => setInvoiceForm({ ...invoiceForm, daysUntilDue: e.target.value })} />
+                      </div>
+                    </div>
+                    <Button className="w-full bg-teal-600 hover:bg-teal-700" disabled={sendingInvoice || !invoiceForm.amount || !invoiceForm.description} onClick={sendLeadInvoice}>
+                      {sendingInvoice ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
+                      Enviar factura a {selectedLead.email}
+                    </Button>
+                    {sentInvoiceUrl && (
+                      <p className="text-xs text-gray-500">Enviada. <a href={sentInvoiceUrl} target="_blank" rel="noopener noreferrer" className="text-teal-600 underline">Ver la factura como la ve el cliente</a></p>
+                    )}
+                  </div>
+                </>
+              )}
               <div className="flex items-center justify-between">
                 <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${statusColor(selectedLead.status)}`}>{selectedLead.status}</span>
                 <div className="flex gap-2">
