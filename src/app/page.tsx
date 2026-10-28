@@ -6,6 +6,7 @@ import { CTASection } from "@/components/layout/CTASection";
 import { LeadForm } from "@/components/layout/LeadForm";
 import { BlogSection } from "@/components/layout/BlogSection";
 import { FeaturedCarousel } from "@/components/layout/FeaturedCarousel";
+import { ReviewsSection } from "@/components/layout/ReviewsSection";
 import { useSiteSettings, getSetting } from "@/lib/useSiteSettings";
 import {
   Search,
@@ -436,6 +437,9 @@ export default function HomePage() {
         buttonLink="/sell-equipment"
         variant="accent"
       />
+
+      {/* Customer reviews */}
+      <ReviewsSection settings={settings} />
     </>
   );
 }
