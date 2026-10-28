@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RichText } from '@/components/RichText';
-import type { LegalPageDef } from '@/lib/legal-drafts';
+import { fillLegalText, type LegalPageDef } from '@/lib/legal-drafts';
+import { getCompanyInfo } from '@/lib/company';
 
 interface Props {
   page: LegalPageDef;
@@ -25,8 +26,8 @@ export function LegalPageEditor({ page, settings, onChange }: Props) {
   const content = settings[contentKey] || '';
 
   const loadDraft = () => {
-    if (content.trim() && !window.confirm('El editor ya tiene texto. ¿Reemplazarlo por el borrador sugerido?')) return;
-    onChange(contentKey, page.draft);
+    if (content.trim() && !window.confirm('El editor ya tiene texto. ¿Reemplazarlo por el texto base?')) return;
+    onChange(contentKey, fillLegalText(page.draft, getCompanyInfo(settings)));
     setPreview(false);
   };
 
@@ -42,14 +43,14 @@ export function LegalPageEditor({ page, settings, onChange }: Props) {
             </a>
           </CardTitle>
           <div className="flex gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={loadDraft}>Cargar borrador</Button>
+            <Button type="button" variant="outline" size="sm" onClick={loadDraft}>Cargar texto base</Button>
             <Button type="button" variant="outline" size="sm" onClick={() => setPreview((p) => !p)}>
               {preview ? <><Pencil className="mr-1.5 h-3.5 w-3.5" />Editar</> : <><Eye className="mr-1.5 h-3.5 w-3.5" />Vista previa</>}
             </Button>
           </div>
         </div>
         <p className="text-xs text-muted-foreground">
-          {content.trim() ? 'Publicada al guardar.' : 'Sin texto: el sitio muestra un aviso con sus datos de contacto.'}
+          {content.trim() ? 'Publicada al guardar.' : 'Sin texto propio: el sitio muestra el texto base con los datos de la empresa. Pulse "Cargar texto base" para editarlo.'}
         </p>
       </CardHeader>
       <CardContent className="space-y-3">

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { maybeRunAutoBlog } from '@/lib/blog-ai';
 
 const prisma = new PrismaClient();
 
@@ -23,6 +24,9 @@ export async function GET(request: Request) {
       }
       return NextResponse.json({ post });
     }
+
+    // Writes the next automatic post in the background when it's due (every 15 days by default)
+    void maybeRunAutoBlog();
 
     const where: Record<string, unknown> = { isPublished: true };
     if (category && category !== 'All') {

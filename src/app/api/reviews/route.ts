@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
+// The 10 sample reviews that came with the site template were all created before this date.
+// They are not from real customers, so the public page never shows them.
+const SAMPLE_REVIEWS_BEFORE = new Date('2026-05-07T00:00:00Z');
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -17,6 +21,7 @@ export async function GET(request: NextRequest) {
     // Public endpoint only returns approved reviews unless admin
     if (!admin) {
       where.isApproved = true;
+      where.createdAt = { gte: SAMPLE_REVIEWS_BEFORE };
     }
 
     if (featured) {
@@ -35,7 +40,7 @@ export async function GET(request: NextRequest) {
         take: limit,
         include: {
           user: {
-            select: { name: true, email: true },
+            select: admin ? { name: true, email: true } : { name: true },
           },
         },
       }),
@@ -43,7 +48,8 @@ export async function GET(request: NextRequest) {
     ]);
 
     return NextResponse.json({
-      reviews,
+      // Reviewer emails are private: only the admin sees them
+      reviews: admin ? reviews : reviews.map(({ email: _email, ...review }) => review),
       pagination: {
         page,
         limit,
