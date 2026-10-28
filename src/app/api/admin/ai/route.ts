@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { completeChat } from '@/lib/ai-providers';
 import { loadCompanyInfo } from '@/lib/company';
+import { generateBlogArticle, NO_INVENTION, runAutoBlog, stripFences } from '@/lib/blog-ai';
 
 // Admin-only (src/proxy.ts guards /api/admin/*): AI writing helpers for the admin panel.
 //   { mode: 'blog', topic, language? }            -> { title, excerpt, content, tags, readTime }
 //   { mode: 'product', name, description }        -> { description }  (same facts, Markdown layout)
-
-const NO_INVENTION =
-  'Never invent facts: no statistics, prices, studies, certifications, years of experience, customer counts, warranty terms or claims about the company beyond what is given.';
+//   { mode: 'auto-blog-now' }                     -> { post }  (writes and saves the next automatic post)
 
 export async function POST(request: NextRequest) {
   try {
@@ -43,37 +42,17 @@ Rules:
 
     if (body.mode === 'blog') {
       const topic = String(body.topic || '').trim();
-      const language = body.language === 'es' ? 'Spanish' : 'English';
       if (!topic) {
         return NextResponse.json({ error: 'Escriba el tema del articulo.' }, { status: 400 });
       }
-      const { text } = await completeChat(
-        [
-          {
-            role: 'system',
-            content: `You write blog articles for the website of ${company.name}, a company in ${company.address} that buys, sells, refurbishes and services medical imaging and ophthalmology equipment (CT, MRI, X-ray, ultrasound, mammography, C-arm, OCT, slit lamps and parts).
-Write a helpful, practical article for clinic owners, hospital purchasing teams and biomedical engineers, written in ${language}.
-${NO_INVENTION} Prefer practical guidance (how to choose, what to check, maintenance tips, questions to ask) over news.
-Format the content as Markdown: an intro paragraph, 4-6 "## " sections, bullet lists where useful, **bold** for key terms, and a short closing paragraph inviting readers to contact ${company.name} for a quote or to browse the catalog at /catalog. Do not start the content with a "# " title. About 700-1000 words.
-Reply ONLY with a JSON object: {"title": string, "excerpt": string (1-2 sentences, max 200 characters), "content": string (the Markdown), "tags": string[] (4-6 short tags), "readTime": number (minutes)}.`,
-          },
-          { role: 'user', content: `Topic: ${topic}` },
-        ],
-        { temperature: 0.7, maxTokens: 3500, json: true }
-      );
-      let article: { title?: string; excerpt?: string; content?: string; tags?: string[]; readTime?: number };
-      try {
-        article = JSON.parse(stripFences(text));
-      } catch {
-        return NextResponse.json({ error: 'La IA devolvio un formato invalido. Intente de nuevo.' }, { status: 502 });
-      }
-      return NextResponse.json({
-        title: article.title || topic,
-        excerpt: article.excerpt || '',
-        content: article.content || '',
-        tags: Array.isArray(article.tags) ? article.tags.join(', ') : '',
-        readTime: Number(article.readTime) || 5,
-      });
+      const article = await generateBlogArticle({ topic, language: body.language === 'es' ? 'es' : 'en', company });
+      return NextResponse.json(article);
+    }
+
+    // Writes and saves the next automatic post right away (Admin > Blog > Blog automatico)
+    if (body.mode === 'auto-blog-now') {
+      const post = await runAutoBlog();
+      return NextResponse.json({ post });
     }
 
     return NextResponse.json({ error: 'Modo no valido' }, { status: 400 });
@@ -84,8 +63,4 @@ Reply ONLY with a JSON object: {"title": string, "excerpt": string (1-2 sentence
       { status: 502 }
     );
   }
-}
-
-function stripFences(text: string): string {
-  return text.trim().replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/, '').trim();
 }

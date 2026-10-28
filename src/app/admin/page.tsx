@@ -116,6 +116,7 @@ import { toast } from 'sonner';
 import { LEGAL_PAGES } from '@/lib/legal-drafts';
 import { LegalPageEditor } from '@/components/admin/LegalPageEditor';
 import { CarouselManager } from '@/components/admin/CarouselManager';
+import { AutoBlogSettings } from '@/components/admin/AutoBlogSettings';
 
 /* ─── Types ─── */
 interface Product {
@@ -4097,6 +4098,8 @@ export default function AdminPage() {
               <Plus className="h-4 w-4" /> Nuevo Post
             </Button>
           </div>
+
+          <AutoBlogSettings onPostCreated={fetchBlogPosts} />
 
           <Card className="border-0 shadow-sm">
             <CardContent className="p-0">
