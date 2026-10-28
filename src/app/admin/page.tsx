@@ -36,6 +36,8 @@ import {
   Upload,
   ImageIcon,
   Loader2,
+  Sparkles,
+  Images,
   Brain,
   MessageSquare,
   Tag,
@@ -113,6 +115,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { LEGAL_PAGES } from '@/lib/legal-drafts';
 import { LegalPageEditor } from '@/components/admin/LegalPageEditor';
+import { CarouselManager } from '@/components/admin/CarouselManager';
 
 /* ─── Types ─── */
 interface Product {
@@ -254,6 +257,7 @@ interface BlogPostData {
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'products', label: 'Productos', icon: Package },
+  { id: 'carousel', label: 'Carrusel Inicio', icon: Images },
   { id: 'orders', label: 'Ordenes', icon: Wallet },
   { id: 'payment-gateways', label: 'Pasarelas de Pago', icon: Shield },
   { id: 'leads', label: 'Leads', icon: FileText },
@@ -365,6 +369,9 @@ export default function AdminPage() {
     isPublished: false, isFeatured: false, readTime: 5,
   });
   const [blogCategoryFilter, setBlogCategoryFilter] = useState('all');
+  const [aiBusy, setAiBusy] = useState<'' | 'product' | 'blog'>('');
+  const [blogTopic, setBlogTopic] = useState('');
+  const [blogLanguage, setBlogLanguage] = useState<'en' | 'es'>('en');
 
   // Services state
   const [services, setServices] = useState<any[]>([]);
@@ -1031,8 +1038,8 @@ export default function AdminPage() {
         body: JSON.stringify({ isFeatured: !product.isFeatured }),
       });
       if (res.ok) {
-        toast.success('Product featured status toggled');
-        fetchDashboardData();
+        toast.success(product.isFeatured ? 'Quitado del carrusel de inicio' : 'Agregado al carrusel de inicio');
+        await fetchDashboardData();
       } else toast.error('Failed to update');
     } catch {
       toast.error('Update failed');
@@ -1196,6 +1203,60 @@ export default function AdminPage() {
       title,
       slug: editingBlogPost ? prev.slug : generateSlug(title),
     }));
+  };
+
+  const callAdminAI = async (payload: Record<string, unknown>) => {
+    const res = await fetch('/api/admin/ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'No se pudo generar con IA');
+    return data;
+  };
+
+  const handleFormatProductDescription = async () => {
+    if (!productForm.description.trim()) {
+      toast.error('Pegue primero la descripcion del equipo.');
+      return;
+    }
+    setAiBusy('product');
+    try {
+      const data = await callAdminAI({ mode: 'product', name: productForm.name, description: productForm.description });
+      setProductForm(prev => ({ ...prev, description: data.description }));
+      toast.success('Descripcion organizada. Revisela antes de guardar.');
+    } catch (error) {
+      toast.error((error as Error).message);
+    } finally {
+      setAiBusy('');
+    }
+  };
+
+  const handleGenerateBlogPost = async () => {
+    if (!blogTopic.trim()) {
+      toast.error('Escriba el tema del articulo.');
+      return;
+    }
+    if (blogForm.content.trim() && !window.confirm('El articulo ya tiene contenido. ¿Reemplazarlo por el generado con IA?')) return;
+    setAiBusy('blog');
+    try {
+      const data = await callAdminAI({ mode: 'blog', topic: blogTopic, language: blogLanguage });
+      setBlogForm(prev => ({
+        ...prev,
+        title: data.title,
+        slug: editingBlogPost ? prev.slug : generateSlug(data.title),
+        excerpt: data.excerpt,
+        content: data.content,
+        tags: data.tags,
+        readTime: data.readTime,
+      }));
+      toast.success('Articulo generado. Reviselo, agregue una imagen de portada y guarde.');
+    } catch (error) {
+      toast.error((error as Error).message);
+    } finally {
+      setAiBusy('');
+    }
   };
 
   const handleBlogSubmit = async () => {
@@ -2108,7 +2169,7 @@ export default function AdminPage() {
                                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => updateProductStatus(product.id, product.status === 'inactive' ? 'active' : 'inactive')} title={product.status === 'inactive' ? 'Mostrar en la tienda' : 'Ocultar de la tienda'}>
                                       {product.status === 'inactive' ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
                                     </Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleProductFeatured(product)} title="Toggle Featured">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleProductFeatured(product)} title={product.isFeatured ? "Quitar del carrusel de inicio" : "Destacar en el carrusel de inicio"}>
                                       <Star className={`h-3.5 w-3.5 ${product.isFeatured ? 'fill-amber-400 text-amber-400' : ''}`} />
                                     </Button>
                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600" onClick={() => confirmDelete('product', product.id, product.name)} title="Delete">
@@ -2132,6 +2193,10 @@ export default function AdminPage() {
               )}
 
               {/* ─── ORDERS TAB ─── */}
+              {activeTab === 'carousel' && (
+                <CarouselManager products={products} onToggleFeatured={toggleProductFeatured} />
+              )}
+
               {activeTab === 'orders' && (
                 <div className="space-y-6">
                   {/* Header */}
@@ -3553,8 +3618,17 @@ export default function AdminPage() {
               })()}
             </div>
             <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea value={productForm.description} onChange={(e) => setProductForm({ ...productForm, description: e.target.value })} placeholder="Product description..." rows={4} />
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Label>Description</Label>
+                <Button type="button" variant="outline" size="sm" onClick={handleFormatProductDescription} disabled={aiBusy !== ''}>
+                  {aiBusy === 'product' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Sparkles className="mr-1.5 h-3.5 w-3.5" />}
+                  Organizar con IA
+                </Button>
+              </div>
+              <Textarea value={productForm.description} onChange={(e) => setProductForm({ ...productForm, description: e.target.value })} placeholder="Pegue la descripcion del equipo y pulse 'Organizar con IA' para darle formato (titulos, listas, negritas)." rows={8} />
+              <p className="text-[11px] text-muted-foreground">
+                Formato: <code>## Titulo</code> para secciones, <code>- </code> para listas, <code>**negrita**</code>. La IA solo reorganiza el texto; no agrega datos.
+              </p>
             </div>
             <div className="space-y-2">
               <Label>Specifications (JSON)</Label>
@@ -4114,6 +4188,30 @@ export default function AdminPage() {
             <DialogTitle>{editingBlogPost ? 'Editar Post' : 'Nuevo Post del Blog'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">
+              <Label htmlFor="blog-ai-topic" className="flex items-center gap-1.5"><Sparkles className="h-4 w-4 text-primary" />Generar articulo con IA</Label>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  id="blog-ai-topic"
+                  placeholder="Tema. Ej: Como elegir un ultrasonido reacondicionado para una clinica"
+                  value={blogTopic}
+                  onChange={(e) => setBlogTopic(e.target.value)}
+                  className="flex-1"
+                />
+                <Select value={blogLanguage} onValueChange={(v) => setBlogLanguage(v as 'en' | 'es')}>
+                  <SelectTrigger className="sm:w-32"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en">Ingles</SelectItem>
+                    <SelectItem value="es">Espanol</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button type="button" onClick={handleGenerateBlogPost} disabled={aiBusy !== ''}>
+                  {aiBusy === 'blog' ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Sparkles className="mr-1.5 h-4 w-4" />}
+                  {aiBusy === 'blog' ? 'Generando...' : 'Generar'}
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground">Llena titulo, resumen, contenido y tags. Revise el texto y agregue la imagen de portada antes de publicar.</p>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
                 <Label htmlFor="blog-title">Titulo *</Label>

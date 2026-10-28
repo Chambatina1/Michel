@@ -7,10 +7,18 @@ import {
 import { db } from '@/lib/db';
 import { evaluatePromo } from '@/lib/promo';
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+// Stripe sends the customer back to the site they paid from (e.g. https://psmedicaldevices.com)
+function getBaseUrl(request: NextRequest): string {
+  const configured = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_APP_URL;
+  if (configured) return configured.replace(/\/$/, '');
+  const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
+  if (host) return `${request.headers.get('x-forwarded-proto') || 'https'}://${host}`;
+  return request.nextUrl.origin;
+}
 
 export async function POST(request: NextRequest) {
   try {
+    const BASE_URL = getBaseUrl(request);
     const body = await request.json();
     const { productId, customerEmail, shippingType, cart, shippingAddress, shippingMethod } = body;
 

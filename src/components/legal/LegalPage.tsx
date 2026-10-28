@@ -1,21 +1,21 @@
 "use client";
 
-import Link from "next/link";
 import { FileText } from "lucide-react";
 import { RichText } from "@/components/RichText";
 import { useSiteSettings, getSetting } from "@/lib/useSiteSettings";
 import { getCompanyInfo } from "@/lib/company";
-import { getLegalPage, type LegalPageDef } from "@/lib/legal-drafts";
+import { fillLegalText, getLegalPage, LEGAL_DEFAULT_UPDATED, type LegalPageDef } from "@/lib/legal-drafts";
 
 // Public legal page whose text is edited in Admin > Paginas Legales.
-// Nothing is published until the company saves approved text there.
+// Until the company saves its own text there, the default text from legal-drafts.ts is shown.
 export function LegalPage({ slug }: { slug: LegalPageDef["slug"] }) {
   const page = getLegalPage(slug);
   const { settings, loading } = useSiteSettings();
   const company = getCompanyInfo(settings);
   const title = getSetting(settings, `${page.key}_title`, page.defaultTitle);
-  const content = getSetting(settings, `${page.key}_content`);
-  const updated = getSetting(settings, `${page.key}_updated`);
+  const savedContent = getSetting(settings, `${page.key}_content`);
+  const content = savedContent || fillLegalText(page.draft, company);
+  const updated = savedContent ? getSetting(settings, `${page.key}_updated`) : LEGAL_DEFAULT_UPDATED;
 
   return (
     <>
@@ -35,19 +35,8 @@ export function LegalPage({ slug }: { slug: LegalPageDef["slug"] }) {
                 <div key={i} className="h-4 animate-pulse rounded bg-secondary" />
               ))}
             </div>
-          ) : content ? (
-            <RichText content={content} />
           ) : (
-            <div className="rounded-xl border bg-secondary/30 p-6 text-center">
-              <p className="text-muted-foreground">
-                This policy is being updated. For any question, please contact {company.name} at{" "}
-                <a href={`mailto:${company.email}`} className="text-primary hover:underline">{company.email}</a> or{" "}
-                <a href={`tel:${company.phone.replace(/[^+\d]/g, "")}`} className="text-primary hover:underline">{company.phone}</a>.
-              </p>
-              <Link href="/contact" className="mt-4 inline-block text-sm font-medium text-primary hover:underline">
-                Contact us
-              </Link>
-            </div>
+            <RichText content={content} />
           )}
         </div>
       </section>

@@ -5,6 +5,7 @@ import { TrustBar } from "@/components/layout/TrustBar";
 import { CTASection } from "@/components/layout/CTASection";
 import { LeadForm } from "@/components/layout/LeadForm";
 import { BlogSection } from "@/components/layout/BlogSection";
+import { FeaturedCarousel } from "@/components/layout/FeaturedCarousel";
 import { useSiteSettings, getSetting } from "@/lib/useSiteSettings";
 import {
   Search,
@@ -232,6 +233,9 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Featured equipment carousel (Admin > Carrusel) */}
+      <FeaturedCarousel settings={settings} />
 
       {/* Equipment Categories — Dynamic from API */}
       <section className="py-16 sm:py-20 lg:py-24">
